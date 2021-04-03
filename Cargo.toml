@@ -1,8 +1,12 @@
 [package]
 name = "indexlist"
 version = "0.1.0"
+description = "A doubly linked list implemented in Rust using vector indexes"
 authors = ["Stefan Lindblad <stefan.lindblad@linux.com>"]
 edition = "2018"
+license = "LGPL-2.1-or-later"
+repository = "https://github.com/Fairglow/index-list.git"
+readme = "README.md"
 
 [dev-dependencies]
 criterion = "0.3.4"
