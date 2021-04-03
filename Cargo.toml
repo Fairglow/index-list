@@ -1,0 +1,14 @@
+[package]
+name = "indexlist"
+version = "0.1.0"
+authors = ["Stefan Lindblad <stefan.lindblad@linux.com>"]
+edition = "2018"
+
+[dev-dependencies]
+criterion = "0.3.4"
+rand = "0.8.3"
+
+[[bench]]
+name = "indexlist-benchmark"
+path = "benches/benchmark.rs"
+harness = false
