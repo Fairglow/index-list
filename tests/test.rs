@@ -1,4 +1,4 @@
-use indexlist::*;
+use index_list::*;
 use std::collections::HashSet;
 use rand::{Rng, seq::SliceRandom};
 

@@ -1,4 +1,4 @@
-use indexlist::IndexList;
+use index_list::IndexList;
 
 fn main() {
     let mut hello = vec!["Hello,", "world!"];
