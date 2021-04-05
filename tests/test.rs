@@ -129,30 +129,30 @@ fn insert_remove_variants() {
         for c in 0..count {
             let num = c as u64;
             numbers.insert(num);
-            print!("IndexList#{}:insert ", num);
+            print!("IndexList#{}: insert ", num);
             match c & 3 {
                 0 => {
                     let ndx = list.insert_first(num);
-                    println!("first - index {}", ndx);
+                    println!("index {} first", ndx);
                     indexes.push(get_raw_index(&ndx));
                 },
                 1 => {
                     let that = Index::from(indexes[rng.gen_range(0..c)] - 1);
                     print!("before {} ", that);
                     let ndx = list.insert_before(that, num);
-                    println!("- index {}", ndx);
+                    println!("index {}", ndx);
                     indexes.push(get_raw_index(&ndx));
                 },
                 2 => {
                     let that = Index::from(indexes[rng.gen_range(0..c)] - 1);
                     print!("after {} ", that);
                     let ndx = list.insert_after(that, num);
-                    println!("- index {}", ndx);
+                    println!("index {} ", ndx);
                     indexes.push(get_raw_index(&ndx));
                 },
                 _ => {
                     let ndx = list.insert_last(num);
-                    println!("last - index {}", ndx);
+                    println!("index {} last", ndx);
                     indexes.push(get_raw_index(&ndx));
                 },
             }

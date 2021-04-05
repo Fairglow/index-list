@@ -193,12 +193,7 @@ impl<T> IndexList<T> {
     }
     #[inline]
     pub fn is_index_used(&self, index: Index) -> bool {
-        if index.is_none() { return false; }
-        if let Some(data) = self.elems.get(index.get().unwrap()) {
-            data.is_some()
-        } else {
-            false
-        }
+        self.get(index).is_some()
     }
     #[inline]
     pub fn first_index(&self) -> Index {
@@ -210,21 +205,21 @@ impl<T> IndexList<T> {
     }
     #[inline]
     pub fn next_index(&self, index: Index) -> Index {
-        if index.is_none() { return index; }
-        if let Some(node) = self.nodes.get(index.get().unwrap()) {
-            node.next
-        } else {
-            Index::new()
+        if let Some(ndx) = index.get() {
+            if let Some(node) = self.nodes.get(ndx) {
+                return node.next;
+            }
         }
+        Index::new()
     }
     #[inline]
     pub fn prev_index(&self, index: Index) -> Index {
-        if index.is_none() { return index; }
-        if let Some(node) = self.nodes.get(index.get().unwrap()) {
-            node.prev
-        } else {
-            Index::new()
+        if let Some(ndx) = index.get() {
+            if let Some(node) = self.nodes.get(ndx) {
+                return node.prev;
+            }
         }
+        Index::new()
     }
     #[inline]
     pub fn get_first(&self) -> Option<&T> {
@@ -236,8 +231,8 @@ impl<T> IndexList<T> {
     }
     #[inline]
     pub fn get(&self, index: Index) -> Option<&T> {
-        if index.is_none() { return None; }
-        self.elems.get(index.get().unwrap())?.as_ref()
+        let ndx = index.get().unwrap_or(usize::MAX);
+        self.elems.get(ndx)?.as_ref()
     }
     #[inline]
     pub fn get_mut_first(&mut self) -> Option<&mut T> {
@@ -250,14 +245,11 @@ impl<T> IndexList<T> {
     #[inline]
     pub fn get_mut(&mut self, index: Index) -> Option<&mut T> {
         if let Some(ndx) = index.get() {
-            if ndx < self.len() {
-                self.elems[ndx].as_mut()
-            } else {
-                None
+            if ndx < self.capacity() {
+                return self.elems[ndx].as_mut();
             }
-        } else {
-            None
         }
+        None
     }
     #[inline]
     // Peek at next element data, if any
@@ -275,32 +267,30 @@ impl<T> IndexList<T> {
         self.elems.contains(&Some(elem))
     }
     pub fn insert_first(&mut self, elem: T) -> Index {
-        let pos = self.new_node(Some(elem));
-        self.linkin_first(pos, Some(true));
-        Index::from(pos)
+        let this = self.new_node(Some(elem));
+        self.linkin_first(this);
+        Index::from(this)
     }
     pub fn insert_last(&mut self, elem: T) -> Index {
-        let pos = self.new_node(Some(elem));
-        self.linkin_last(pos, Some(true));
-        Index::from(pos)
+        let this = self.new_node(Some(elem));
+        self.linkin_last(this);
+        Index::from(this)
     }
     pub fn insert_before(&mut self, index: Index, elem: T) -> Index {
         if index.is_none() {
             return self.insert_first(elem);
         }
-        let ndx = index.get().unwrap();
-        let pos = self.new_node(Some(elem));
-        self.linkin_this_before_that(pos, ndx);
-        Index::from(pos)
+        let this = self.new_node(Some(elem));
+        self.linkin_this_before_that(this, index);
+        this
     }
     pub fn insert_after(&mut self, index: Index, elem: T) -> Index {
         if index.is_none() {
             return self.insert_last(elem);
         }
-        let ndx = index.get().unwrap();
-        let pos = self.new_node(Some(elem));
-        self.linkin_this_after_that(pos, ndx);
-        Index::from(pos)
+        let this = self.new_node(Some(elem));
+        self.linkin_this_after_that(this, index);
+        this
     }
     pub fn remove_first(&mut self) -> Option<T> {
         self.remove(self.first_index())
@@ -309,14 +299,12 @@ impl<T> IndexList<T> {
         self.remove(self.last_index())
     }
     pub fn remove(&mut self, index: Index) -> Option<T> {
-        if index.is_none() { return None; }
-        let ndx = index.get().unwrap();
-        if ndx >= self.nodes.len() { return None; }
-        let elem = self.remove_elem_at_index(ndx);
-        debug_assert!(self.elems[ndx].is_none());
-        self.linkout(ndx, Some(true));
-        self.insert_free_node(ndx);
-        elem
+        let elem_opt = self.remove_elem_at_index(index);
+        if elem_opt.is_some() {
+            self.linkout_used(index);
+            self.linkin_free(index);
+        }
+        elem_opt
     }
     #[inline]
     pub fn iter(&self) -> Iter<T> {
@@ -339,7 +327,7 @@ impl<T> IndexList<T> {
             .take_while(|&i| self.is_free(i))
             .collect();
         removed.iter().for_each(|&i| {
-            self.linkout(i, Some(false));
+            self.linkout_free(Index::from(i));
         });
         if removed.len() > 0 {
             let left = self.capacity() - removed.len();
@@ -368,7 +356,7 @@ impl<T> IndexList<T> {
         debug_assert_eq!(dst.len(), src.len());
         src.iter()
             .zip(dst.iter())
-            .for_each(|(s, d)| self.replace_dest_index(*s, *d));
+            .for_each(|(s, d)| self.replace_dest_with_source(*s, *d));
         self.free.new_both(Index::new());
         self.elems.truncate(need);
         self.nodes.truncate(need);
@@ -419,7 +407,6 @@ impl<T> IndexList<T> {
     fn get_indexnode(&self, at: usize) -> &IndexNode {
         &self.nodes[at]
     }
-    #[allow(dead_code)]
     #[inline]
     fn set_prev(&mut self, index: Index, new_prev: Index) -> Index {
         if let Some(at) = index.get() {
@@ -428,7 +415,6 @@ impl<T> IndexList<T> {
             index
         }
     }
-    #[allow(dead_code)]
     #[inline]
     fn set_next(&mut self, index: Index, new_next: Index) -> Index {
         if let Some(at) = index.get() {
@@ -438,149 +424,154 @@ impl<T> IndexList<T> {
         }
     }
     #[inline]
-    fn insert_elem_at_index(&mut self, at: usize, elem: Option<T>) {
-        self.elems[at] = elem;
-        self.size += 1;
-    }
-    #[inline]
-    fn remove_elem_at_index(&mut self, at: usize) -> Option<T> {
-        self.size -= 1;
-        self.elems[at].take()
-    }
-    fn new_node(&mut self, elem: Option<T>) -> usize {
-        if let Some(pos) = self.remove_free_node() {
-            self.insert_elem_at_index(pos, elem);
-            pos
-        } else {
-            let pos = self.nodes.len();
-            self.nodes.push(IndexNode::new());
-            self.elems.push(elem);
-            self.size += 1;
-            pos
+    fn linkin_tail(&mut self, prev: Index, this: Index, next: Index) {
+        if next.is_none() {
+            let old_tail = self.used.new_tail(this);
+            debug_assert_eq!(old_tail, prev);
         }
     }
-    fn remove_free_node(&mut self) -> Option<usize> {
-        if let Some(head_pos) = self.free.head.get() {
-            self.linkout(head_pos, Some(false));
-            Some(head_pos)
+    #[inline]
+    fn linkin_head(&mut self, prev: Index, this: Index, next: Index) {
+        if prev.is_none() {
+            let old_head = self.used.new_head(this);
+            debug_assert_eq!(old_head, next);
+        }
+    }
+    #[inline]
+    fn insert_elem_at_index(&mut self, this: Index, elem: Option<T>) {
+        if let Some(at) = this.get() {
+            self.elems[at] = elem;
+            self.size += 1;
+        }
+    }
+    #[inline]
+    fn remove_elem_at_index(&mut self, this: Index) -> Option<T> {
+        if let Some(at) = this.get() {
+            self.size -= 1;
+            self.elems[at].take()
         } else {
             None
         }
     }
-    fn insert_free_node(&mut self, at: usize) {
-        debug_assert!(self.is_free(at));
-        self.linkin_last(at, Some(false));
+    fn new_node(&mut self, elem: Option<T>) -> Index {
+        let reuse = self.free.head;
+        if reuse.is_some() {
+            self.insert_elem_at_index(reuse, elem);
+            self.linkout_free(reuse);
+            return reuse;
+        }
+        let pos = self.nodes.len();
+        self.nodes.push(IndexNode::new());
+        self.elems.push(elem);
+        self.size += 1;
+        Index::from(pos)
     }
-    fn linkin_first(&mut self, this: usize, is_used: Option<bool>) {
-        let is_used = is_used.unwrap_or(self.is_used(this));
-        let old_head_ndx = if is_used { self.used.head } else { self.free.head };
-        if let Some(old_head_pos) = old_head_ndx.get() {
-            let old_head = self.get_mut_indexnode(old_head_pos);
-            let old_head_prev = old_head.new_prev(Index::from(this));
-            debug_assert_eq!(old_head_prev.get(), None);
-            let this_node = self.get_mut_indexnode(this);
-            let old_next = this_node.new_next(Index::from(old_head_pos));
-            debug_assert_eq!(old_next.get(), None);
-        }
-        let list = if is_used { &mut self.used } else { &mut self.free };
-        if list.new_head(Index::from(this)).is_none() {
-            if list.is_empty() {
-                list.new_both(Index::from(this));
-            } else {
-                let old_prev_ndx = list.new_tail(Index::from(this));
-                debug_assert_eq!(old_prev_ndx.get(), None);
-            }
-        }
-    }
-    fn linkin_last(&mut self, this: usize, is_used: Option<bool>) {
-        let is_used = is_used.unwrap_or(self.is_used(this));
-        let old_tail_ndx = if is_used { self.used.tail } else { self.free.tail };
-        if let Some(old_tail_pos) = old_tail_ndx.get() {
-            let old_tail = self.get_mut_indexnode(old_tail_pos);
-            let old_tail_next = old_tail.new_next(Index::from(this));
-            debug_assert_eq!(old_tail_next.get(), None);
-            let this_node = self.get_mut_indexnode(this);
-            let old_prev = this_node.new_prev(Index::from(old_tail_pos));
-            debug_assert_eq!(old_prev.get(), None);
-        }
-        let list = if is_used { &mut self.used } else { &mut self.free };
-        if list.new_tail(Index::from(this)).is_none() {
-            if list.is_empty() {
-                list.new_both(Index::from(this));
-            } else {
-                let old_head = list.new_head(Index::from(this));
-                debug_assert_eq!(old_head.get(), None);
-            }
-        }
-    }
-    fn linkin_this_before_that(&mut self, this: usize, that: usize) {
-        let next = self.get_mut_indexnode(that);
-        let before = next.new_prev(Index::from(this));
-        let node = self.get_mut_indexnode(this);
-        node.new_prev(before);
-        node.new_next(Index::from(that));
-        if let Some(prev_pos) = before.get() {
-            let prev = self.get_mut_indexnode(prev_pos);
-            let old_next_ndx = prev.new_next(Index::from(this));
-            debug_assert_eq!(old_next_ndx.get(), Some(that));
+    fn linkin_free(&mut self, this: Index) {
+        debug_assert_eq!(self.is_index_used(this), false);
+        let prev = self.free.tail;
+        self.set_next(prev, this);
+        self.set_prev(this, prev);
+        if self.free.is_empty() {
+            self.free.new_both(this);
         } else {
-            let old_next_ndx = self.used.new_head(Index::from(this));
-            debug_assert_eq!(old_next_ndx, Index::from(that));
+            let old_tail = self.free.new_tail(this);
+            debug_assert_eq!(old_tail, prev);
         }
     }
-    fn linkin_this_after_that(&mut self, this: usize, that: usize) {
-        let prev = self.get_mut_indexnode(that);
-        let next_opt = prev.new_next(Index::from(this));
-        let node = self.get_mut_indexnode(this);
-        node.new_next(next_opt);
-        node.new_prev(Index::from(that));
-        if let Some(next_pos) = next_opt.get() {
-            let next = self.get_mut_indexnode(next_pos);
-            let old_prev = next.new_prev(Index::from(this));
-            debug_assert_eq!(old_prev, Index::from(that));
+    fn linkin_first(&mut self, this: Index) {
+        debug_assert!(self.is_index_used(this));
+        let next = self.used.head;
+        self.set_prev(next, this);
+        self.set_next(this, next);
+        if self.used.is_empty() {
+            self.used.new_both(this);
         } else {
-            let old_prev = self.used.new_tail(Index::from(this));
-            debug_assert_eq!(old_prev, Index::from(that));
+            let old_head = self.used.new_head(this);
+            debug_assert_eq!(old_head, next);
         }
     }
-    fn linkout(&mut self, this: usize, is_used: Option<bool>) {
-        let node = self.get_mut_indexnode(this);
-        let next_opt = node.new_next(Index::new());
-        let prev_opt = node.new_prev(Index::new());
-        if let Some(next_pos) = next_opt.get() {
-            let next = self.get_mut_indexnode(next_pos);
-            let old_prev = next.new_prev(prev_opt);
-            debug_assert_eq!(old_prev, Index::from(this));
-        }
-        if let Some(prev_pos) = prev_opt.get() {
-            let prev = self.get_mut_indexnode(prev_pos);
-            let old_next = prev.new_next(next_opt);
-            debug_assert_eq!(old_next, Index::from(this));
-        }
-        let is_used = is_used.unwrap_or(self.is_used(this));
-        let list = if is_used { &mut self.used } else { &mut self.free };
-        if next_opt.is_none() {
-            let old_prev = list.new_tail(prev_opt);
-            debug_assert_eq!(old_prev, Index::from(this));
-        }
-        if prev_opt.is_none() {
-            let old_next = list.new_head(next_opt);
-            debug_assert_eq!(old_next, Index::from(this));
+    fn linkin_last(&mut self, this: Index) {
+        debug_assert!(self.is_index_used(this));
+        let prev = self.used.tail;
+        self.set_next(prev, this);
+        self.set_prev(this, prev);
+        if self.used.is_empty() {
+            self.used.new_both(this);
+        } else {
+            let old_tail = self.used.new_tail(this);
+            debug_assert_eq!(old_tail, prev);
         }
     }
-    fn replace_dest_index(&mut self, src: usize, dst: usize) {
-        self.linkout(dst, Some(false));
+    // prev? >< that => prev? >< this >< that
+    fn linkin_this_before_that(&mut self, this: Index, that: Index) {
+        debug_assert!(self.is_index_used(this));
+        debug_assert!(self.is_index_used(that));
+        let prev = self.set_prev(that, this);
+        let old_next = self.set_next(prev, this);
+        if old_next.is_some() { debug_assert_eq!(old_next, that); }
+        self.set_prev(this, prev);
+        self.set_next(this, that);
+        self.linkin_head(prev, this, that);
+    }
+    // that >< next? => that >< this >< next?
+    fn linkin_this_after_that(&mut self, this: Index, that: Index) {
+        debug_assert!(self.is_index_used(this));
+        debug_assert!(self.is_index_used(that));
+        let next = self.set_next(that, this);
+        let old_prev = self.set_prev(next, this);
+        if old_prev.is_some() { debug_assert_eq!(old_prev, that); }
+        self.set_prev(this, that);
+        self.set_next(this, next);
+        self.linkin_tail(that, this, next);
+    }
+    // prev >< this >< next => prev >< next
+    fn linkout_node(&mut self, this: Index) -> (Index, Index) {
+        let next = self.set_next(this, Index::new());
+        let prev = self.set_prev(this, Index::new());
+        let old_prev = self.set_prev(next, prev);
+        if old_prev.is_some() { debug_assert_eq!(old_prev, this); }
+        let old_next = self.set_next(prev, next);
+        if old_next.is_some() { debug_assert_eq!(old_next, this); }
+        (prev, next)
+    }
+    fn linkout_used(&mut self, this: Index) {
+        let (prev, next) = self.linkout_node(this);
+        if next.is_none() {
+            let old_tail = self.used.new_tail(prev);
+            debug_assert_eq!(old_tail, this);
+        }
+        if prev.is_none() {
+            let old_head = self.used.new_head(next);
+            debug_assert_eq!(old_head, this);
+        }
+    }
+    fn linkout_free(&mut self, this: Index) {
+        let (prev, next) = self.linkout_node(this);
+        if next.is_none() {
+            let old_tail = self.free.new_tail(prev);
+            debug_assert_eq!(old_tail, this);
+        }
+        if prev.is_none() {
+            let old_head = self.free.new_head(next);
+            debug_assert_eq!(old_head, this);
+        }
+    }
+    fn replace_dest_with_source(&mut self, src: usize, dst: usize) {
+        debug_assert!(self.is_free(dst));
+        debug_assert!(self.is_used(src));
+        self.linkout_free(Index::from(dst));
         let src_node = self.get_indexnode(src);
-        let src_next_opt = src_node.next;
-        let src_prev_opt = src_node.prev;
-        self.linkout(src, Some(true));
+        let next = src_node.next;
+        let prev = src_node.prev;
+        self.linkout_used(Index::from(src));
         self.elems[dst] = self.elems[src].take();
-        if let Some(next_pos) = src_next_opt.get() {
-            self.linkin_this_before_that(dst, next_pos);
-        } else if let Some(prev_pos) = src_prev_opt.get() {
-            self.linkin_this_after_that(dst, prev_pos);
+        let this = Index::from(dst);
+        if next.is_some() {
+            self.linkin_this_before_that(this, next);
+        } else if prev.is_some() {
+            self.linkin_this_after_that(this, prev);
         } else {
-            self.linkin_first(dst, Some(true));
+            self.linkin_first(this);
         }
     }
 }
