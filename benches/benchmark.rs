@@ -1,7 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use std::collections::vec_deque::VecDeque;
 use std::collections::LinkedList;
-use indexlist::*;
+use index_list::*;
 
 fn indexlist_head(n: u32) {
     let mut list = IndexList::<u32>::new();
@@ -42,8 +42,8 @@ fn indexlist_allover(n: u32) {
     });
     (0..n as usize).for_each(|i| {
         let val = 0;
-        let ndx = list.insert_before(i, val);
-        let got = list.remove_index(ndx).unwrap();
+        let ndx = list.insert_before(Index::from(i), val);
+        let got = list.remove(ndx).unwrap();
         assert_eq!(got, val);
     })
 }
