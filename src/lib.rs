@@ -269,12 +269,12 @@ impl<T> IndexList<T> {
     pub fn insert_first(&mut self, elem: T) -> Index {
         let this = self.new_node(Some(elem));
         self.linkin_first(this);
-        Index::from(this)
+        this
     }
     pub fn insert_last(&mut self, elem: T) -> Index {
         let this = self.new_node(Some(elem));
         self.linkin_last(this);
-        Index::from(this)
+        this
     }
     pub fn insert_before(&mut self, index: Index, elem: T) -> Index {
         if index.is_none() {
@@ -329,7 +329,7 @@ impl<T> IndexList<T> {
         removed.iter().for_each(|&i| {
             self.linkout_free(Index::from(i));
         });
-        if removed.len() > 0 {
+        if !removed.is_empty() {
             let left = self.capacity() - removed.len();
             self.nodes.truncate(left);
             self.elems.truncate(left);
