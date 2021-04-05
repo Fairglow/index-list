@@ -43,7 +43,7 @@ fn indexlist_allover(n: u32) {
     (0..n as usize).for_each(|i| {
         let val = 0;
         let ndx = list.insert_before(Index::from(i), val);
-        let got = list.remove_index(ndx).unwrap();
+        let got = list.remove(ndx).unwrap();
         assert_eq!(got, val);
     })
 }

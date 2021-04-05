@@ -17,6 +17,9 @@ fn debug_print_indexes(list: &IndexList<u64>) {
     }
     println!(" ]");
 }
+fn get_raw_index(index: &Index) -> u32 {
+    index.to_string().parse::<u32>().unwrap_or(0)
+}
 
 #[test]
 fn test_instantiate() {
@@ -29,12 +32,16 @@ fn test_instantiate() {
     assert_eq!(list.last_index(), null);
     assert_eq!(list.next_index(null), null);
     assert_eq!(list.prev_index(null), null);
-    assert_eq!(list.get_index(null), None);
-    assert_eq!(list.get_mut_index(null), None);
+    assert_eq!(list.get(null), None);
+    assert_eq!(list.get_mut(null), None);
     assert_eq!(list.remove_first(), None);
     assert_eq!(list.remove_last(), None);
-    assert_eq!(list.remove_index(null), None);
+    assert_eq!(list.remove(null), None);
     assert_eq!(list.to_vec(), Vec::<&u64>::new());
+    let mut empty_list = IndexList::new();
+    list.append(&mut empty_list);
+    list.prepend(&mut empty_list);
+    list.split(null);
     list.trim_safe();
     list.trim_swap();
 }
@@ -68,7 +75,7 @@ fn test_append() {
     list.append(&mut other);
     assert_eq!(list.len(), 6);
     assert_eq!(list.capacity(), 6);
-    assert_eq!(list.get_index(Index::from(3u32)), Some(&"D"));
+    assert_eq!(list.get(Index::from(3u32)), Some(&"D"));
     let parts: Vec<&str> = list.iter().map(|e| e.as_ref()).collect();
     assert_eq!(parts.join(", "), "A, B, C, D, E, F");
 }
@@ -85,7 +92,7 @@ fn test_trim_swap() {
         let mut indexes: Vec<usize> = (0..list.capacity()).collect();
         indexes.shuffle(&mut rng);
         (0..8).for_each(|_| {
-            list.remove_index(Index::from(indexes.pop()));
+            list.remove(Index::from(indexes.pop()));
         });
         debug_print_indexes(&list);
         list.trim_swap();
@@ -127,26 +134,26 @@ fn insert_remove_variants() {
                 0 => {
                     let ndx = list.insert_first(num);
                     println!("first - index {}", ndx);
-                    indexes.push(ndx.get_raw());
+                    indexes.push(get_raw_index(&ndx));
                 },
                 1 => {
                     let that = Index::from(indexes[rng.gen_range(0..c)] - 1);
                     print!("before {} ", that);
                     let ndx = list.insert_before(that, num);
                     println!("- index {}", ndx);
-                    indexes.push(ndx.get_raw());
+                    indexes.push(get_raw_index(&ndx));
                 },
                 2 => {
                     let that = Index::from(indexes[rng.gen_range(0..c)] - 1);
                     print!("after {} ", that);
                     let ndx = list.insert_after(that, num);
                     println!("- index {}", ndx);
-                    indexes.push(ndx.get_raw());
+                    indexes.push(get_raw_index(&ndx));
                 },
                 _ => {
                     let ndx = list.insert_last(num);
                     println!("last - index {}", ndx);
-                    indexes.push(ndx.get_raw());
+                    indexes.push(get_raw_index(&ndx));
                 },
             }
             print!("IndexList: ");
@@ -157,7 +164,7 @@ fn insert_remove_variants() {
             let ndx = Index::from(
                 indexes.swap_remove(rng.gen_range(0..c as usize)) - 1);
             println!("IndexList - remove {}", ndx);
-            let num = list.remove_index(ndx).unwrap();
+            let num = list.remove(ndx).unwrap();
             //println!("IndexList: {}", list.to_debug_string());
             assert!(numbers.remove(&num));
         }

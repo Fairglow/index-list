@@ -10,7 +10,6 @@ impl Index {
     fn new() -> Index {
         Index { 0: None }
     }
-    #[allow(dead_code)]
     #[inline]
     pub fn is_some(&self) -> bool {
         self.0.is_some()
@@ -22,14 +21,6 @@ impl Index {
     #[inline]
     fn get(&self) -> Option<usize> {
         Some(self.0?.get() as usize - 1)
-    }
-    #[inline]
-    pub fn get_raw(&self) -> u32 {
-        if let Some(n) = self.0 {
-            n.get()
-        } else {
-            0
-        }
     }
     #[inline]
     fn set(mut self, index: Option<usize>) -> Self {
@@ -119,31 +110,31 @@ struct IndexEnds {
 
 impl IndexEnds {
     #[inline]
-    pub fn new() -> Self {
+    fn new() -> Self {
         IndexEnds { head: Index::new(), tail: Index::new() }
     }
     #[inline]
-    pub fn clear(&mut self) {
+    fn clear(&mut self) {
         self.new_both(Index::new());
     }
     #[inline]
-    pub fn is_empty(&self) -> bool {
+    fn is_empty(&self) -> bool {
         self.head.is_none()
     }
     #[inline]
-    pub fn new_head(&mut self, head: Index) -> Index {
+    fn new_head(&mut self, head: Index) -> Index {
         let old_head = self.head;
         self.head = head;
         old_head
     }
     #[inline]
-    pub fn new_tail(&mut self, tail: Index) -> Index {
+    fn new_tail(&mut self, tail: Index) -> Index {
         let old_tail = self.tail;
         self.tail = tail;
         old_tail
     }
     #[inline]
-    pub fn new_both(&mut self, both: Index) {
+    fn new_both(&mut self, both: Index) {
         self.head = both;
         self.tail = both;
     }
@@ -237,27 +228,27 @@ impl<T> IndexList<T> {
     }
     #[inline]
     pub fn get_first(&self) -> Option<&T> {
-        self.get_index(self.first_index())
+        self.get(self.first_index())
     }
     #[inline]
     pub fn get_last(&self) -> Option<&T> {
-        self.get_index(self.last_index())
+        self.get(self.last_index())
     }
     #[inline]
-    pub fn get_index(&self, index: Index) -> Option<&T> {
+    pub fn get(&self, index: Index) -> Option<&T> {
         if index.is_none() { return None; }
         self.elems.get(index.get().unwrap())?.as_ref()
     }
     #[inline]
     pub fn get_mut_first(&mut self) -> Option<&mut T> {
-        self.get_mut_index(self.first_index())
+        self.get_mut(self.first_index())
     }
     #[inline]
     pub fn get_mut_last(&mut self) -> Option<&mut T> {
-        self.get_mut_index(self.last_index())
+        self.get_mut(self.last_index())
     }
     #[inline]
-    pub fn get_mut_index(&mut self, index: Index) -> Option<&mut T> {
+    pub fn get_mut(&mut self, index: Index) -> Option<&mut T> {
         if let Some(ndx) = index.get() {
             if ndx < self.len() {
                 self.elems[ndx].as_mut()
@@ -271,12 +262,12 @@ impl<T> IndexList<T> {
     #[inline]
     // Peek at next element data, if any
     pub fn peek_next(&self, index: Index) -> Option<&T> {
-        self.get_index(self.next_index(index))
+        self.get(self.next_index(index))
     }
     #[inline]
     // Peek at previous element data, if any
     pub fn peek_prev(&self, index: Index) -> Option<&T> {
-        self.get_index(self.prev_index(index))
+        self.get(self.prev_index(index))
     }
     #[inline]
     pub fn contains(&self, elem: T) -> bool
@@ -312,12 +303,12 @@ impl<T> IndexList<T> {
         Index::from(pos)
     }
     pub fn remove_first(&mut self) -> Option<T> {
-        self.remove_index(self.first_index())
+        self.remove(self.first_index())
     }
     pub fn remove_last(&mut self) -> Option<T> {
-        self.remove_index(self.last_index())
+        self.remove(self.last_index())
     }
-    pub fn remove_index(&mut self, index: Index) -> Option<T> {
+    pub fn remove(&mut self, index: Index) -> Option<T> {
         if index.is_none() { return None; }
         let ndx = index.get().unwrap();
         if ndx >= self.nodes.len() { return None; }
@@ -430,16 +421,20 @@ impl<T> IndexList<T> {
     }
     #[allow(dead_code)]
     #[inline]
-    fn set_prev(&mut self, index: Index, new_prev: Index) {
+    fn set_prev(&mut self, index: Index, new_prev: Index) -> Index {
         if let Some(at) = index.get() {
-            self.get_mut_indexnode(at).new_prev(new_prev);
+            self.get_mut_indexnode(at).new_prev(new_prev)
+        } else {
+            index
         }
     }
     #[allow(dead_code)]
     #[inline]
-    fn set_next(&mut self, index: Index, new_next: Index) {
+    fn set_next(&mut self, index: Index, new_next: Index) -> Index {
         if let Some(at) = index.get() {
-            self.get_mut_indexnode(at).new_next(new_next);
+            self.get_mut_indexnode(at).new_next(new_next)
+        } else {
+            index
         }
     }
     #[inline]
@@ -615,7 +610,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
     type Item = &'a T;
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        let item = self.list.get_index(self.curr);
+        let item = self.list.get(self.curr);
         self.curr = self.list.next_index(self.curr);
         item
     }
