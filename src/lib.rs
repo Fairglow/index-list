@@ -1,3 +1,13 @@
+//! A doubly-linked list implemented in safe Rust.
+//!
+//! The list elements are stored in a vector which provides an index to the
+//! element, where it stores the index of the next and previous element in the
+//! list. The index does not change as long as the element is not removed, even
+//! when the element changes its position in the list.
+//!
+//! A new IndexList can be created empty with the `new` method, or created from
+//! an existing vector with `IndexList::from`.
+//!
 use std::fmt;
 use std::num::NonZeroU32;
 use std::convert::TryFrom;
@@ -11,10 +21,12 @@ impl Index {
         Index { 0: None }
     }
     #[inline]
+    /// Returns `true` for a valid index
     pub fn is_some(&self) -> bool {
         self.0.is_some()
     }
     #[inline]
+    /// Returns `true` if the index is invalid
     pub fn is_none(&self) -> bool {
         self.0.is_none()
     }
@@ -79,17 +91,17 @@ struct IndexNode {
 
 impl IndexNode {
     #[inline]
-    pub fn new() -> IndexNode {
+    fn new() -> IndexNode {
         IndexNode { next: Index::new(), prev: Index::new() }
     }
     #[inline]
-    pub fn new_next(&mut self, next: Index) -> Index {
+    fn new_next(&mut self, next: Index) -> Index {
         let old_next = self.next;
         self.next = next;
         old_next
     }
     #[inline]
-    pub fn new_prev(&mut self, prev: Index) -> Index {
+    fn new_prev(&mut self, prev: Index) -> Index {
         let old_prev = self.prev;
         self.prev = prev;
         old_prev
@@ -162,6 +174,7 @@ impl<T> Default for IndexList<T> {
 }
 
 impl<T> IndexList<T> {
+    /// Creates a new empty index list.
     pub fn new() -> Self {
         IndexList {
             elems: Vec::new(),
@@ -171,14 +184,17 @@ impl<T> IndexList<T> {
             size: 0,
         }
     }
+    /// Returns the current capacity of the list.
     #[inline]
     pub fn capacity(&self) -> usize {
         self.elems.len()
     }
+    /// Returns the number of valid elements in the list.
     #[inline]
     pub fn len(&self) -> usize {
         self.size
     }
+    /// Clears the list be removing all elements, making it empty.
     #[inline]
     pub fn clear(&mut self) {
         self.elems.clear();
@@ -187,22 +203,27 @@ impl<T> IndexList<T> {
         self.free.clear();
         self.size = 0;
     }
+    /// Returns `true` when the list is empty.
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.used.is_empty()
     }
+    /// Returns `true` if the index is valid.
     #[inline]
     pub fn is_index_used(&self, index: Index) -> bool {
         self.get(index).is_some()
     }
+    /// Returns the index of the first element.
     #[inline]
     pub fn first_index(&self) -> Index {
         self.used.head
     }
+    /// Returns the index of the last element.
     #[inline]
     pub fn last_index(&self) -> Index {
         self.used.tail
     }
+    /// Returns the index of the next element, after index.
     #[inline]
     pub fn next_index(&self, index: Index) -> Index {
         if let Some(ndx) = index.get() {
@@ -213,6 +234,7 @@ impl<T> IndexList<T> {
         Index::new()
     }
     #[inline]
+    /// Returns the index of the previous element, before index.
     pub fn prev_index(&self, index: Index) -> Index {
         if let Some(ndx) = index.get() {
             if let Some(node) = self.nodes.get(ndx) {
@@ -221,27 +243,33 @@ impl<T> IndexList<T> {
         }
         Index::new()
     }
+    /// Get a reference to the first element.
     #[inline]
     pub fn get_first(&self) -> Option<&T> {
         self.get(self.first_index())
     }
+    /// Get a reference to the last element.
     #[inline]
     pub fn get_last(&self) -> Option<&T> {
         self.get(self.last_index())
     }
+    /// Get a reference to the element at the index.
     #[inline]
     pub fn get(&self, index: Index) -> Option<&T> {
         let ndx = index.get().unwrap_or(usize::MAX);
         self.elems.get(ndx)?.as_ref()
     }
+    /// Get a mutable reference to the first element.
     #[inline]
     pub fn get_mut_first(&mut self) -> Option<&mut T> {
         self.get_mut(self.first_index())
     }
+    /// Get a mutable reference to the last element.
     #[inline]
     pub fn get_mut_last(&mut self) -> Option<&mut T> {
         self.get_mut(self.last_index())
     }
+    /// Get a mutable reference to the element at the index.
     #[inline]
     pub fn get_mut(&mut self, index: Index) -> Option<&mut T> {
         if let Some(ndx) = index.get() {
@@ -252,30 +280,34 @@ impl<T> IndexList<T> {
         None
     }
     #[inline]
-    // Peek at next element data, if any
+    /// Peek at next element, after index.
     pub fn peek_next(&self, index: Index) -> Option<&T> {
         self.get(self.next_index(index))
     }
     #[inline]
-    // Peek at previous element data, if any
+    /// Peek at previous element, before index.
     pub fn peek_prev(&self, index: Index) -> Option<&T> {
         self.get(self.prev_index(index))
     }
+    /// Returns `true` if the element exists.
     #[inline]
     pub fn contains(&self, elem: T) -> bool
     where T: PartialEq {
         self.elems.contains(&Some(elem))
     }
+    /// Insert a new element at the beginning.
     pub fn insert_first(&mut self, elem: T) -> Index {
         let this = self.new_node(Some(elem));
         self.linkin_first(this);
         this
     }
+    /// Insert a new element at the end.
     pub fn insert_last(&mut self, elem: T) -> Index {
         let this = self.new_node(Some(elem));
         self.linkin_last(this);
         this
     }
+    /// Insert a new element before the index.
     pub fn insert_before(&mut self, index: Index, elem: T) -> Index {
         if index.is_none() {
             return self.insert_first(elem);
@@ -284,6 +316,7 @@ impl<T> IndexList<T> {
         self.linkin_this_before_that(this, index);
         this
     }
+    /// Insert a new element after the index.
     pub fn insert_after(&mut self, index: Index, elem: T) -> Index {
         if index.is_none() {
             return self.insert_last(elem);
@@ -292,12 +325,15 @@ impl<T> IndexList<T> {
         self.linkin_this_after_that(this, index);
         this
     }
+    /// Remove the first element.
     pub fn remove_first(&mut self) -> Option<T> {
         self.remove(self.first_index())
     }
+    /// Remove the last element.
     pub fn remove_last(&mut self) -> Option<T> {
         self.remove(self.last_index())
     }
+    /// Remove the element at the index.
     pub fn remove(&mut self, index: Index) -> Option<T> {
         let elem_opt = self.remove_elem_at_index(index);
         if elem_opt.is_some() {
@@ -306,13 +342,16 @@ impl<T> IndexList<T> {
         }
         elem_opt
     }
+    /// Create a new iterator over all the element.
     #[inline]
     pub fn iter(&self) -> Iter<T> {
         Iter { list: &self, curr: self.first_index() }
     }
+    /// Create a vector for all elements.
     pub fn to_vec(&self) -> Vec<&T> {
         self.iter().filter_map(Option::Some).collect()
     }
+    /// Insert all the elements from the vector, which will be drained.
     pub fn from(vec: &mut Vec<T>) -> IndexList<T> {
         let mut list = IndexList::<T>::new();
         vec.drain(..).for_each(|elem| {
@@ -320,7 +359,7 @@ impl<T> IndexList<T> {
         });
         list
     }
-    /// Remove some unused indexes at the end by truncating, if any
+    /// Remove any unused indexes at the end by truncating.
     pub fn trim_safe(&mut self) {
         let removed: Vec<usize> = (self.len()..self.capacity())
             .rev()
@@ -335,8 +374,8 @@ impl<T> IndexList<T> {
             self.elems.truncate(left);
         }
     }
-    /// Remove all unused elements by moving indexes then truncating
-    /// Note that this call may invalidate some indexes
+    /// Remove all unused elements by swapping indexes and then truncating.
+    /// Note that this call may invalidate some indexes.
     pub fn trim_swap(&mut self) {
         let need = self.size;
         // destination is all free node indexes below the needed limit
@@ -361,19 +400,19 @@ impl<T> IndexList<T> {
         self.elems.truncate(need);
         self.nodes.truncate(need);
     }
-    /// Add the elements of the other list after the elements of this list
+    /// Add the elements of the other list at the end.
     pub fn append(&mut self, other: &mut IndexList<T>) {
         while let Some(elem) = other.remove_first() {
             self.insert_last(elem);
         }
     }
-    /// Add the element of the other list before the element of this list
+    /// Add the elements of the other list at the beginning.
     pub fn prepend(&mut self, other: &mut IndexList<T>) {
         while let Some(elem) = other.remove_last() {
             self.insert_first(elem);
         }
     }
-    /// Split the elements at this index and after to a new list
+    /// Split the list by moving the elements from the index to a new list.
     pub fn split(&mut self, index: Index) -> IndexList<T> {
         let mut list = IndexList::<T>::new();
         if index.is_none() {

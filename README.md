@@ -1,32 +1,36 @@
 # Index List
 
-An index list is a hybrid between a vector and a linked-list, with some of the properties of each. Every element has an index and can be accessed directly through that index. That index does not change if the element is moved in the list, nor when other elements are inserted in or removed from the list.
+An index list is a hybrid between a vector and a linked-list, with some of the properties of each. Every element has an index in the vector and can be accessed directly there. This index is persistent as long as the element remains in the list and is not affected by other elements of the list. An index does not change if the element is moved in the list, nor when other elements are inserted or removed from the list.
+
+The user is not meant to know the exact value stored inside of the index and should not create any Indexes, but can safely copy an existing one. The index should only be used for the purpose of accessing the element data at that location or to traverse the list. This is why almost all methods on the Indexes are private.
+
+When a new element is inserted in the list, its index will be returned from that method, but the user can safely ignore that value as the element can be found anyway by walking the list.
 
 Old indexes will be reused in FIFO fashion, before new indexes are added.
 
-## The index element
+## The index list design
 
-The list elements are placed in a vector, which is why they can be accessed directly, where each element knows the index of the element before and after it, as well as the data contained at that index. This indirection makes it easy to implement the list safely in Rust, because the traditional next and previous pointers are replaced by the indexes to them respectively.
+The list elements are placed in a vector, which is why they can be accessed directly, where each element knows the index of the element before and after it, as well as the data contained at that index. This indirection makes it easy to implement the list safely in Rust, because the traditional next and previous pointers are replaced by their respective indexes.
 
-You can think of it like this:
+You can think of a list node like this:
 ```rust
 struct IndexElem<T> {
-	next: Option<index>,
-	prev: Option<index>,
+	next: Option<u32>,
+	prev: Option<u32>,
 	data: Option<T>,
 }
 ```
-Where an element without data is free and if either `next` or `prev` is `None` that is the end of the list in that direction.
+Where an element without data is free and if either `next` or `prev` is `None` then that is the end of the list in that direction.
 
 ## The element vector
 
-Besides providing direct access to the element, the vector for the elements provide better locality between them, which is useful when walking through the list.
+Besides providing direct access to the element, the vector for the elements provide better locality between them, which is useful when walking through the list as it is likely to mean fewer cache misses. The element will however appear scrambled in the vector and only by walking the list can the correct order be established.
 
 ## Walking the list
 
-The user walks the list be providing the current index, then getting either the next or the previous index. Therefore, unless using an iterator, accessing the data is a secondary call as the `next`, or `prev`, methods will only give you the new index.
+To walk the list the user needs a starting index. One can be obtained from either `first_index` or `last_index` method calls. Then use either the the `next_index`, or `prev_index` methods to move in the respective direction. An index is persistent in the list as long as the element is not removed and can be stored and used later. The indexes are typically not sequential as the list is traversed.
 
-Note that any calls to the `trim_swap` method, may invalidate the index. You can test if it is larger than the capacity. To prevent this, you can hold a reference to the list, where you store the index. However this will prevent any modification to the list while the reference is held.
+Note that any calls to the `trim_swap` method, may invalidate one or more index. It van be verified because any index greater than the `capacity` has been moved. To prevent this invalidation, you can hold a reference to the list as well as the index, but this will also block any and all modifications to the list while the reference is held.
 
 ## The list capacity
 
@@ -38,8 +42,18 @@ Then there is the unsafe method (`trim_swap`) which will swap the elements to mo
 
 ## Unsafe
 
-The index list has no unsafe code blocks. The reason is that it does not use pointers between the element, but their index in the vector instead. The only method that is considered unsafe is the `trim_swap` because it may change the index of the elements.
+The index list has no unsafe code blocks. The reason is that it does not use pointers between the element, but their index in the vector instead.
+
+However the `trim_swap` method is considered unsafe is because it may change the index of some elements. Therefore any stored indexes may be invalid after the method call. Use it wisely and make sure no such indexes are kept at that time.
 
 ## Performance
 
-In my simple tests the index list appears to offer roughly twice the performance of LinkedList, plus a lot of functionality that is only experimental, such as the cursor methods.
+In my simple benchmark tests the index list appears to offer roughly twice the performance of LinkedList, plus a some functionality that is only experimental, such as the cursor methods.
+
+This may not reflect any real-life performance difference and you are urged to evaluate this in your own use-case rather than relying on the figures provided by the included benchmarks.
+
+## Reasons to use
+
+The IndexList may be useful when you insert and remove frequently from the body of the list or need to reorder the elements often, such as when sorting them. If you only insert or remove elements at the ends, then there are other more efficient alternatives, such as VecDeque for instance.
+
+The persistence of the indexes means that frequent accesses to certain elements can be cached (without holding any reference to the list node or its data), or used to skip through the list in larger steps.
