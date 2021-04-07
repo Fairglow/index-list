@@ -22,11 +22,16 @@ impl Index {
     }
     #[inline]
     /// Returns `true` for a valid index
+    ///
+    /// A valid index can be used in IndexList method calls.
     pub fn is_some(&self) -> bool {
         self.0.is_some()
     }
     #[inline]
     /// Returns `true` if the index is invalid
+    ///
+    /// An invalid index should not be used in any IndexList method calls
+    /// because they will always cause `None` to be returned.
     pub fn is_none(&self) -> bool {
         self.0.is_none()
     }
@@ -175,6 +180,13 @@ impl<T> Default for IndexList<T> {
 
 impl<T> IndexList<T> {
     /// Creates a new empty index list.
+    ///
+    /// Example:
+    /// ```rust
+    /// use index_list::IndexList;
+    ///
+    /// let list = IndexList::<u64>::new();
+    /// ```
     pub fn new() -> Self {
         IndexList {
             elems: Vec::new(),
@@ -185,16 +197,45 @@ impl<T> IndexList<T> {
         }
     }
     /// Returns the current capacity of the list.
+    ///
+    /// This value is always greater than or equal to the length.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let list = IndexList::<u64>::new();
+    /// let cap = list.capacity();
+    /// assert!(cap >= list.len());
+    /// ```
     #[inline]
     pub fn capacity(&self) -> usize {
         self.elems.len()
     }
     /// Returns the number of valid elements in the list.
+    ///
+    /// This value is always less than or equal to the capacity.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let mut list = IndexList::<u64>::new();
+    /// # list.insert_first(42);
+    /// let first = list.remove_first();
+    /// assert!(list.len() < list.capacity());
+    /// ```
     #[inline]
     pub fn len(&self) -> usize {
         self.size
     }
     /// Clears the list be removing all elements, making it empty.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let mut list = IndexList::<u64>::new();
+    /// list.clear();
+    /// assert!(list.is_empty());
+    /// ```
     #[inline]
     pub fn clear(&mut self) {
         self.elems.clear();
@@ -204,6 +245,13 @@ impl<T> IndexList<T> {
         self.size = 0;
     }
     /// Returns `true` when the list is empty.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// let list = IndexList::<u64>::new();
+    /// assert!(list.is_empty());
+    /// ```
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.used.is_empty()
@@ -213,17 +261,45 @@ impl<T> IndexList<T> {
     pub fn is_index_used(&self, index: Index) -> bool {
         self.get(index).is_some()
     }
-    /// Returns the index of the first element.
+    /// Returns the index of the first element, or `None` if the list is empty.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// let list = IndexList::<u64>::new();
+    /// let index = list.first_index();
+    /// ```
     #[inline]
     pub fn first_index(&self) -> Index {
         self.used.head
     }
-    /// Returns the index of the last element.
+    /// Returns the index of the last element, or `None` if the list is empty.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// let list = IndexList::<u64>::new();
+    /// let index = list.last_index();
+    /// ```
     #[inline]
     pub fn last_index(&self) -> Index {
         self.used.tail
     }
-    /// Returns the index of the next element, after index.
+    /// Returns the index of the next element, after index, or `None` when the
+    /// end is reached.
+    ///
+    /// *NOTE* that indexes are likely not sequential.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let list = IndexList::<u64>::new();
+    /// let mut index = list.first_index();
+    /// while index.is_some() {
+    ///     // Do something
+    ///     index = list.next_index(index);
+    /// }
+    /// ```
     #[inline]
     pub fn next_index(&self, index: Index) -> Index {
         if let Some(ndx) = index.get() {
@@ -234,7 +310,21 @@ impl<T> IndexList<T> {
         Index::new()
     }
     #[inline]
-    /// Returns the index of the previous element, before index.
+    /// Returns the index of the previous element, before index, or `None` when
+    /// the beginning is reached.
+    ///
+    /// *NOTE* that indexes are likely not sequential.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let list = IndexList::<u64>::new();
+    /// let mut index = list.last_index();
+    /// while index.is_some() {
+    ///     // Do something
+    ///     index = list.prev_index(index);
+    /// }
+    /// ```
     pub fn prev_index(&self, index: Index) -> Index {
         if let Some(ndx) = index.get() {
             if let Some(node) = self.nodes.get(ndx) {
@@ -243,33 +333,83 @@ impl<T> IndexList<T> {
         }
         Index::new()
     }
-    /// Get a reference to the first element.
+    /// Get a reference to the first element data, or `None`.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let list = IndexList::<u64>::new();
+    /// let data = list.get_first();
+    /// ```
     #[inline]
     pub fn get_first(&self) -> Option<&T> {
         self.get(self.first_index())
     }
-    /// Get a reference to the last element.
+    /// Get a reference to the last element data, or `None`.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let list = IndexList::<u64>::new();
+    /// let data = list.get_last();
+    /// ```
     #[inline]
     pub fn get_last(&self) -> Option<&T> {
         self.get(self.last_index())
     }
-    /// Get a reference to the element at the index.
+    /// Get an immutable reference to the element data at the index, or `None`.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let list = IndexList::<u64>::new();
+    /// # let index = list.first_index();
+    /// let data = list.get(index);
+    /// ```
     #[inline]
     pub fn get(&self, index: Index) -> Option<&T> {
         let ndx = index.get().unwrap_or(usize::MAX);
         self.elems.get(ndx)?.as_ref()
     }
-    /// Get a mutable reference to the first element.
+    /// Get a mutable reference to the first element data, or `None`.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let mut list = IndexList::<u64>::new();
+    /// if let Some(data) = list.get_mut_first() {
+    ///     // Update the data somehow
+    /// }
+    /// ```
     #[inline]
     pub fn get_mut_first(&mut self) -> Option<&mut T> {
         self.get_mut(self.first_index())
     }
-    /// Get a mutable reference to the last element.
+    /// Get a mutable reference to the last element data, or `None`.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let mut list = IndexList::<u64>::new();
+    /// if let Some(data) = list.get_mut_last() {
+    ///     // Update the data somehow
+    /// }
+    /// ```
     #[inline]
     pub fn get_mut_last(&mut self) -> Option<&mut T> {
         self.get_mut(self.last_index())
     }
-    /// Get a mutable reference to the element at the index.
+    /// Get a mutable reference to the element data at the index, or `None`.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let mut list = IndexList::<u64>::new();
+    /// # let index = list.first_index();
+    /// if let Some(data) = list.get_mut(index) {
+    ///     // Update the data somehow
+    /// }
+    /// ```
     #[inline]
     pub fn get_mut(&mut self, index: Index) -> Option<&mut T> {
         if let Some(ndx) = index.get() {
@@ -280,34 +420,98 @@ impl<T> IndexList<T> {
         None
     }
     #[inline]
-    /// Peek at next element, after index.
+    /// Peek at next element data, after the index, if any.
+    ///
+    /// Returns `None` if there is no next index in the list.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let list = IndexList::<u64>::new();
+    /// # let index = list.first_index();
+    /// if let Some(data) = list.peek_next(index) {
+    ///     // Consider the next data
+    /// }
+    /// ```
     pub fn peek_next(&self, index: Index) -> Option<&T> {
         self.get(self.next_index(index))
     }
     #[inline]
-    /// Peek at previous element, before index.
+    /// Peek at previous element data, before the index, if any.
+    ///
+    /// Returns `None` if there is no previous index in the list.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let list = IndexList::<u64>::new();
+    /// # let index = list.last_index();
+    /// if let Some(data) = list.peek_prev(index) {
+    ///     // Consider the previous data
+    /// }
+    /// ```
     pub fn peek_prev(&self, index: Index) -> Option<&T> {
         self.get(self.prev_index(index))
     }
-    /// Returns `true` if the element exists.
+    /// Returns `true` if the element is in the list.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let mut list = IndexList::<u64>::new();
+    /// # let index = list.insert_first(42);
+    /// if list.contains(42) {
+    ///     // Find it?
+    /// } else {
+    ///     // Insert it?
+    /// }
+    /// ```
     #[inline]
     pub fn contains(&self, elem: T) -> bool
     where T: PartialEq {
         self.elems.contains(&Some(elem))
     }
     /// Insert a new element at the beginning.
+    ///
+    /// It is usually not necessary to keep the index, as the element data
+    /// can always be found again by walking the list.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let mut list = IndexList::<u64>::new();
+    /// let index = list.insert_first(42);
+    /// ```
     pub fn insert_first(&mut self, elem: T) -> Index {
         let this = self.new_node(Some(elem));
         self.linkin_first(this);
         this
     }
     /// Insert a new element at the end.
+    ///
+    /// It is typically not necessary to store the index, as the data will be
+    /// there when walking the list.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let mut list = IndexList::<u64>::new();
+    /// let index = list.insert_last(42);
+    /// ```
     pub fn insert_last(&mut self, elem: T) -> Index {
         let this = self.new_node(Some(elem));
         self.linkin_last(this);
         this
     }
     /// Insert a new element before the index.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let mut list = IndexList::<u64>::new();
+    /// # let mut index = list.last_index();
+    /// index = list.insert_before(index, 42);
+    /// ```
     pub fn insert_before(&mut self, index: Index, elem: T) -> Index {
         if index.is_none() {
             return self.insert_first(elem);
@@ -317,6 +521,14 @@ impl<T> IndexList<T> {
         this
     }
     /// Insert a new element after the index.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let mut list = IndexList::<u64>::new();
+    /// # let mut index = list.first_index();
+    /// index = list.insert_after(index, 42);
+    /// ```
     pub fn insert_after(&mut self, index: Index, elem: T) -> Index {
         if index.is_none() {
             return self.insert_last(elem);
@@ -325,15 +537,37 @@ impl<T> IndexList<T> {
         self.linkin_this_after_that(this, index);
         this
     }
-    /// Remove the first element.
+    /// Remove the first element and return its data.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let mut list = IndexList::<u64>::new();
+    /// let data = list.remove_first();
+    /// ```
     pub fn remove_first(&mut self) -> Option<T> {
         self.remove(self.first_index())
     }
-    /// Remove the last element.
+    /// Remove the last element and return its data.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let mut list = IndexList::<u64>::new();
+    /// let data = list.remove_last();
+    /// ```
     pub fn remove_last(&mut self) -> Option<T> {
         self.remove(self.last_index())
     }
-    /// Remove the element at the index.
+    /// Remove the element at the index and return its data.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let mut list = IndexList::<u64>::new();
+    /// # let index = list.first_index();
+    /// let data = list.remove(index);
+    /// ```
     pub fn remove(&mut self, index: Index) -> Option<T> {
         let elem_opt = self.remove_elem_at_index(index);
         if elem_opt.is_some() {
@@ -343,15 +577,39 @@ impl<T> IndexList<T> {
         elem_opt
     }
     /// Create a new iterator over all the element.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let list = IndexList::<u64>::new();
+    /// let strings: Vec<String> = list.iter().map(|x| x.to_string()).collect();
+    /// println!("[ {} ]", strings.join(", "));
+    /// ```
     #[inline]
     pub fn iter(&self) -> Iter<T> {
         Iter { list: &self, curr: self.first_index() }
     }
     /// Create a vector for all elements.
+    ///
+    /// Returns a new vector with immutable reference to the elements data.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let mut list = IndexList::<u64>::new();
+    /// let total: u64 = list.iter().sum();
+    /// ```
     pub fn to_vec(&self) -> Vec<&T> {
         self.iter().filter_map(Option::Some).collect()
     }
     /// Insert all the elements from the vector, which will be drained.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// let mut the_numbers = vec![4, 8, 15, 16, 23, 42];
+    /// let list = IndexList::from(&mut the_numbers);
+    /// ```
     pub fn from(vec: &mut Vec<T>) -> IndexList<T> {
         let mut list = IndexList::<T>::new();
         vec.drain(..).for_each(|elem| {
@@ -360,6 +618,17 @@ impl<T> IndexList<T> {
         list
     }
     /// Remove any unused indexes at the end by truncating.
+    ///
+    /// If the unused indexes don't appear at the end, then nothing happens.
+    ///
+    /// No valid indexes are changed.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let mut list = IndexList::<u64>::new();
+    /// list.trim_safe();
+    /// ```
     pub fn trim_safe(&mut self) {
         let removed: Vec<usize> = (self.len()..self.capacity())
             .rev()
@@ -375,7 +644,23 @@ impl<T> IndexList<T> {
         }
     }
     /// Remove all unused elements by swapping indexes and then truncating.
-    /// Note that this call may invalidate some indexes.
+    ///
+    /// This will reduce the capacity of the list, but only if there are any
+    /// unused elements. Length and capacity will be equal after the call.
+    ///
+    /// *NOTE* that this call may invalidate some indexes.
+    ///
+    /// While it is possible to tell if an index has become invalid, because
+    /// only indexes at or above the new capacity limit has been moved, it is
+    /// not recommended to rely on that fact or test for it.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let mut list = IndexList::<u64>::new();
+    /// list.trim_swap();
+    /// assert_eq!(list.len(), list.capacity());
+    /// ```
     pub fn trim_swap(&mut self) {
         let need = self.size;
         // destination is all free node indexes below the needed limit
@@ -401,18 +686,72 @@ impl<T> IndexList<T> {
         self.nodes.truncate(need);
     }
     /// Add the elements of the other list at the end.
+    ///
+    /// The other list will be empty after the call as all its elements have
+    /// been moved to this list.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let mut first_numbers = vec![4, 8, 15];
+    /// # let mut last_numbers = vec![16, 23, 42];
+    /// # let mut list = IndexList::from(&mut first_numbers);
+    /// # let mut other = IndexList::from(&mut last_numbers);
+    /// let sum_both = list.len() + other.len();
+    /// list.append(&mut other);
+    /// assert!(other.is_empty());
+    /// assert_eq!(list.len(), sum_both);
+    /// # assert_eq!(list.to_string(), "[ 4 >< 8 >< 15 >< 16 >< 23 >< 42 ]");
+    /// ```
     pub fn append(&mut self, other: &mut IndexList<T>) {
         while let Some(elem) = other.remove_first() {
             self.insert_last(elem);
         }
     }
     /// Add the elements of the other list at the beginning.
+    ///
+    /// The other list will be empty after the call as all its elements have
+    /// been moved to this list.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let mut first_numbers = vec![4, 8, 15];
+    /// # let mut last_numbers = vec![16, 23, 42];
+    /// # let mut list = IndexList::from(&mut last_numbers);
+    /// # let mut other = IndexList::from(&mut first_numbers);
+    /// let sum_both = list.len() + other.len();
+    /// list.prepend(&mut other);
+    /// assert!(other.is_empty());
+    /// assert_eq!(list.len(), sum_both);
+    /// # assert_eq!(list.to_string(), "[ 4 >< 8 >< 15 >< 16 >< 23 >< 42 ]");
+    /// ```
     pub fn prepend(&mut self, other: &mut IndexList<T>) {
         while let Some(elem) = other.remove_last() {
             self.insert_first(elem);
         }
     }
     /// Split the list by moving the elements from the index to a new list.
+    ///
+    /// The original list will no longer contain the elements data that was
+    /// moved to the other list.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let mut the_numbers = vec![4, 8, 15, 16, 23, 42];
+    /// # let mut list = IndexList::from(&mut the_numbers);
+    /// # let mut index = list.first_index();
+    /// # index = list.next_index(index);
+    /// # index = list.next_index(index);
+    /// # index = list.next_index(index);
+    /// let total = list.len();
+    /// let other = list.split(index);
+    /// assert!(list.len() < total);
+    /// assert_eq!(list.len() + other.len(), total);
+    /// # assert_eq!(list.to_string(), "[ 4 >< 8 >< 15 ]");
+    /// # assert_eq!(other.to_string(), "[ 16 >< 23 >< 42 ]");
+    /// ```
     pub fn split(&mut self, index: Index) -> IndexList<T> {
         let mut list = IndexList::<T>::new();
         if index.is_none() {

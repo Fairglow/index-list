@@ -44,7 +44,7 @@ Then there is the unsafe method (`trim_swap`) which will swap the elements to mo
 
 The index list has no unsafe code blocks. The reason is that it does not use pointers between the element, but their index in the vector instead.
 
-However the `trim_swap` method is considered unsafe is because it may change the index of some elements. Therefore any stored indexes may be invalid after the method call. Use it wisely and make sure no such indexes are kept at that time.
+However the `trim_swap` method is considered unsafe, but for a different reason and that is because it may change the index of some elements. Therefore any stored indexes may be invalid after the method call, or point to a different element. Use it wisely and make sure no such indexes are kept at that time.
 
 ## Performance
 
