@@ -266,7 +266,7 @@ impl<T> IndexList<T> {
     /// Example:
     /// ```rust
     /// # use index_list::IndexList;
-    /// let list = IndexList::<u64>::new();
+    /// # let list = IndexList::<u64>::new();
     /// let index = list.first_index();
     /// ```
     #[inline]
@@ -278,7 +278,7 @@ impl<T> IndexList<T> {
     /// Example:
     /// ```rust
     /// # use index_list::IndexList;
-    /// let list = IndexList::<u64>::new();
+    /// # let list = IndexList::<u64>::new();
     /// let index = list.last_index();
     /// ```
     #[inline]
@@ -505,6 +505,8 @@ impl<T> IndexList<T> {
     }
     /// Insert a new element before the index.
     ///
+    /// If the index is `None` then the new element will be inserted first.
+    ///
     /// Example:
     /// ```rust
     /// # use index_list::IndexList;
@@ -521,6 +523,8 @@ impl<T> IndexList<T> {
         this
     }
     /// Insert a new element after the index.
+    ///
+    /// If the index is `None` then the new element will be inserted last.
     ///
     /// Example:
     /// ```rust
@@ -543,7 +547,9 @@ impl<T> IndexList<T> {
     /// ```rust
     /// # use index_list::IndexList;
     /// # let mut list = IndexList::<u64>::new();
+    /// # list.insert_first(42);
     /// let data = list.remove_first();
+    /// # assert_eq!(data, Some(42));
     /// ```
     pub fn remove_first(&mut self) -> Option<T> {
         self.remove(self.first_index())
@@ -554,7 +560,9 @@ impl<T> IndexList<T> {
     /// ```rust
     /// # use index_list::IndexList;
     /// # let mut list = IndexList::<u64>::new();
+    /// # list.insert_last(42);
     /// let data = list.remove_last();
+    /// # assert_eq!(data, Some(42));
     /// ```
     pub fn remove_last(&mut self) -> Option<T> {
         self.remove(self.last_index())
@@ -564,9 +572,12 @@ impl<T> IndexList<T> {
     /// Example:
     /// ```rust
     /// # use index_list::IndexList;
-    /// # let mut list = IndexList::<u64>::new();
-    /// # let index = list.first_index();
+    /// # let mut letters = vec!["A", "B", "C"];
+    /// # let mut list = IndexList::from(&mut letters);
+    /// # let mut index = list.first_index();
+    /// # index = list.next_index(index);
     /// let data = list.remove(index);
+    /// # assert_eq!(data, Some("B"));
     /// ```
     pub fn remove(&mut self, index: Index) -> Option<T> {
         let elem_opt = self.remove_elem_at_index(index);
@@ -581,9 +592,10 @@ impl<T> IndexList<T> {
     /// Example:
     /// ```rust
     /// # use index_list::IndexList;
-    /// # let list = IndexList::<u64>::new();
-    /// let strings: Vec<String> = list.iter().map(|x| x.to_string()).collect();
-    /// println!("[ {} ]", strings.join(", "));
+    /// # let mut numbers: Vec<usize> = vec![120, 240, 360];
+    /// # let mut list = IndexList::from(&mut numbers);
+    /// let total: usize = list.iter().sum();
+    /// assert_eq!(total, 720);
     /// ```
     #[inline]
     pub fn iter(&self) -> Iter<T> {
@@ -596,8 +608,10 @@ impl<T> IndexList<T> {
     /// Example:
     /// ```rust
     /// # use index_list::IndexList;
-    /// # let mut list = IndexList::<u64>::new();
-    /// let total: u64 = list.iter().sum();
+    /// # let mut numbers: Vec<u64> = vec![1, 2, 3];
+    /// # let mut list = IndexList::from(&mut numbers);
+    /// let vector: Vec<&u64> = list.to_vec();
+    /// # assert_eq!(format!("{:?}", vector), "[1, 2, 3]");
     /// ```
     pub fn to_vec(&self) -> Vec<&T> {
         self.iter().filter_map(Option::Some).collect()
@@ -609,6 +623,8 @@ impl<T> IndexList<T> {
     /// # use index_list::IndexList;
     /// let mut the_numbers = vec![4, 8, 15, 16, 23, 42];
     /// let list = IndexList::from(&mut the_numbers);
+    /// assert_eq!(the_numbers.len(), 0);
+    /// assert_eq!(list.len(), 6);
     /// ```
     pub fn from(vec: &mut Vec<T>) -> IndexList<T> {
         let mut list = IndexList::<T>::new();
@@ -626,8 +642,12 @@ impl<T> IndexList<T> {
     /// Example:
     /// ```rust
     /// # use index_list::IndexList;
-    /// # let mut list = IndexList::<u64>::new();
+    /// # let mut the_numbers = vec![4, 8, 15, 16, 23, 42];
+    /// # let mut list = IndexList::from(&mut the_numbers);
+    /// list.remove_last();
+    /// assert!(list.len() < list.capacity());
     /// list.trim_safe();
+    /// assert_eq!(list.len(), list.capacity());
     /// ```
     pub fn trim_safe(&mut self) {
         let removed: Vec<usize> = (self.len()..self.capacity())
@@ -657,7 +677,10 @@ impl<T> IndexList<T> {
     /// Example:
     /// ```rust
     /// # use index_list::IndexList;
-    /// # let mut list = IndexList::<u64>::new();
+    /// # let mut the_numbers = vec![4, 8, 15, 16, 23, 42];
+    /// # let mut list = IndexList::from(&mut the_numbers);
+    /// list.remove_first();
+    /// assert!(list.len() < list.capacity());
     /// list.trim_swap();
     /// assert_eq!(list.len(), list.capacity());
     /// ```

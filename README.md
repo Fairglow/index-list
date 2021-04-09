@@ -52,8 +52,23 @@ In my simple benchmark tests the index list appears to offer roughly twice the p
 
 This may not reflect any real-life performance difference and you are urged to evaluate this in your own use-case rather than relying on the figures provided by the included benchmarks.
 
-## Reasons to use
+## Reasons to use IndexList
 
-The IndexList may be useful when you insert and remove frequently from the body of the list or need to reorder the elements often, such as when sorting them. If you only insert or remove elements at the ends, then there are other more efficient alternatives, such as VecDeque for instance.
+* Data is frequently inserted or removed from the body of the list (not the ends).
+* Data is reordered often, or sorted.
+* Need persistent indexes even when data is inserted or removed.
+* Want to maintain skip elements for taking larger steps through the list.
+* Need to cache certain elements for fast retrieval, without holding a reference to it.
 
-The persistence of the indexes means that frequent accesses to certain elements can be cached (without holding any reference to the list node or its data), or used to skip through the list in larger steps.
+## Reasons to use an alternative
+
+* Data is mainly inserted and removed at the ends of the list, then VecDeque is likely a better alternative.
+* Merges and splits of the lists are common; these are heavy `O(n)` operations in this design.
+* When handling lists longer than 4 billion entries, as this list is limited to 32-bit indexes.
+* When you need to shrink the list often, because `trim_swap` is expensive and has the side-effect of potentially invalidating indexes.
+
+This is not an exhaustive list of alternatives, and I may have missed important choices, but these were the ones that I was aware of at the time of writing this.
+
+* `std::collection::LinkedList`
+* `std::collections::vec_deque::VecDeque`
+* `Vec`
