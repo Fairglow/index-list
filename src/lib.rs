@@ -428,10 +428,12 @@ impl<T> IndexList<T> {
     /// Example:
     /// ```rust
     /// # use index_list::IndexList;
-    /// # let list = IndexList::<u64>::new();
+    /// # let mut numbers: Vec<usize> = vec![1, 2, 3];
+    /// # let mut list = IndexList::from(&mut numbers);
     /// # let index = list.first_index();
     /// if let Some(data) = list.peek_next(index) {
     ///     // Consider the next data
+    /// #   assert_eq!(*data, 2);
     /// }
     /// ```
     pub fn peek_next(&self, index: Index) -> Option<&T> {
@@ -445,10 +447,12 @@ impl<T> IndexList<T> {
     /// Example:
     /// ```rust
     /// # use index_list::IndexList;
-    /// # let list = IndexList::<u64>::new();
+    /// # let mut numbers: Vec<usize> = vec![1, 2, 3];
+    /// # let mut list = IndexList::from(&mut numbers);
     /// # let index = list.last_index();
     /// if let Some(data) = list.peek_prev(index) {
     ///     // Consider the previous data
+    /// #   assert_eq!(*data, 2);
     /// }
     /// ```
     pub fn peek_prev(&self, index: Index) -> Option<&T> {
@@ -471,6 +475,26 @@ impl<T> IndexList<T> {
     pub fn contains(&self, elem: T) -> bool
     where T: PartialEq {
         self.elems.contains(&Some(elem))
+    }
+    /// Returns the index of the element containg the data.
+    ///
+    /// If there is more than one element with the same data, the one with the
+    /// lowest index will always be returned.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::{Index, IndexList};
+    /// # let mut numbers: Vec<usize> = vec![1, 2, 3];
+    /// # let mut list = IndexList::from(&mut numbers);
+    /// let index = list.index_of(2);
+    /// # assert_eq!(index, Index::from(1u32))
+    /// ```
+    #[inline]
+    pub fn index_of(&self, elem: T) -> Index
+    where T: PartialEq {
+        Index::from(self.elems.iter().position(|e| {
+            if let Some(data) = e { data == &elem } else { false }
+        }))
     }
     /// Insert a new element at the beginning.
     ///
