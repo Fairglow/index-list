@@ -11,7 +11,7 @@ fn indexlist_head(n: u32) {
     assert_eq!(accum, 52433920);
 }
 
-fn vec_first(n: u32) {
+fn vec_head(n: u32) {
     let mut vec: Vec<u32> = Vec::new();
     (1..=n).rev().for_each(|i| vec.insert(0, i));
     let mut accum: u64 = 0;
@@ -35,7 +35,7 @@ fn linkedlist_head(n: u32) {
     assert_eq!(accum, 52433920);
 }
 
-fn indexlist_allover(n: u32) {
+fn indexlist_body(n: u32) {
     let mut list = IndexList::<u32>::new();
     (1..=n).for_each(|i| {
         list.insert_last(i);
@@ -48,7 +48,7 @@ fn indexlist_allover(n: u32) {
     })
 }
 
-fn vec_allover(n: u32) {
+fn vec_body(n: u32) {
     let mut vec: Vec<u32> = Vec::new();
     (1..=n).for_each(|i| vec.push(i));
     (0..n as usize).for_each(|i| {
@@ -59,7 +59,7 @@ fn vec_allover(n: u32) {
     })
 }
 
-fn vecdeque_allover(n: u32) {
+fn vecdeque_body(n: u32) {
     let mut vec: VecDeque<u32> = VecDeque::new();
     (1..=n).for_each(|i| vec.push_back(i));
     (0..n as usize).for_each(|i| {
@@ -70,22 +70,63 @@ fn vecdeque_allover(n: u32) {
     })
 }
 
+fn indexlist_walk(n: u32) {
+    let mut list = IndexList::<u32>::new();
+    (1..=n).rev().for_each(|i| { list.insert_first(i); });
+    let mut accum: u64 = 0;
+    let mut index = list.first_index();
+    while index.is_some() {
+        accum += *list.get(index).unwrap() as u64;
+        index = list.next_index(index);
+    };
+    index = list.last_index();
+    while index.is_some() {
+        accum -= *list.get(index).unwrap() as u64;
+        index = list.prev_index(index);
+    };
+    assert_eq!(accum, 0);
+}
+
+fn indexlist_iter(n: u32) {
+    let mut list = IndexList::<u32>::new();
+    (1..=n).rev().for_each(|i| { list.insert_first(i); });
+    let mut accum: u64 = 0;
+    list.iter().for_each(|i| { accum += *i as u64; });
+    list.iter().rev().for_each(|i| { accum -= *i as u64; });
+    assert_eq!(accum, 0);
+}
+
+fn linkedlist_iter(n: u32) {
+    let mut list = LinkedList::<u32>::new();
+    (1..=n).rev().for_each(|i| { list.push_front(i); });
+    let mut accum: u64 = 0;
+    list.iter().for_each(|i| { accum += *i as u64; });
+    list.iter().rev().for_each(|i| { accum -= *i as u64; });
+    assert_eq!(accum, 0);
+}
+
 fn criterion_benchmark(c: &mut Criterion) {
     let count = 10 * 1024;
     c.bench_function("indexlist-head", |b| b.iter(||
         indexlist_head(black_box(count))));
-    c.bench_function("vec-first", |b| b.iter(||
-        vec_first(black_box(count))));
+    c.bench_function("vec-head", |b| b.iter(||
+        vec_head(black_box(count))));
     c.bench_function("vecdeque-head", |b| b.iter(||
         vecdeque_head(black_box(count))));
     c.bench_function("linkedlist-head", |b| b.iter(||
         linkedlist_head(black_box(count))));
-    c.bench_function("indexlist-allover", |b| b.iter(||
-        indexlist_allover(black_box(count))));
-    c.bench_function("vec-allover", |b| b.iter(||
-        vec_allover(black_box(count))));
-    c.bench_function("vecdeque-allover", |b| b.iter(||
-        vecdeque_allover(black_box(count))));
+    c.bench_function("indexlist-body", |b| b.iter(||
+        indexlist_body(black_box(count))));
+    c.bench_function("vec-body", |b| b.iter(||
+        vec_body(black_box(count))));
+    c.bench_function("vecdeque-body", |b| b.iter(||
+        vecdeque_body(black_box(count))));
+    c.bench_function("indexlist-walk", |b| b.iter(||
+        indexlist_walk(black_box(count))));
+    c.bench_function("linkedlist-iter", |b| b.iter(||
+        linkedlist_iter(black_box(count))));
+    c.bench_function("indexlist-iter", |b| b.iter(||
+        indexlist_iter(black_box(count))));
 }
 
 criterion_group!(benches, criterion_benchmark);

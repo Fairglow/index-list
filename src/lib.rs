@@ -11,6 +11,7 @@
 use std::fmt;
 use std::num::NonZeroU32;
 use std::convert::TryFrom;
+use std::iter::DoubleEndedIterator;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct Index(Option<NonZeroU32>);
@@ -599,7 +600,7 @@ impl<T> IndexList<T> {
     /// ```
     #[inline]
     pub fn iter(&self) -> Iter<T> {
-        Iter { list: &self, curr: self.first_index() }
+        Iter { list: &self, next: self.first_index(), prev: self.last_index() }
     }
     /// Create a vector for all elements.
     ///
@@ -995,20 +996,29 @@ impl<T> From<T> for IndexList<T> {
 
 pub struct Iter<'a, T> {
     list: &'a IndexList<T>,
-    curr: Index,
+    next: Index,
+    prev: Index,
 }
 
 impl<'a, T> Iterator for Iter<'a, T> {
     type Item = &'a T;
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        let item = self.list.get(self.curr);
-        self.curr = self.list.next_index(self.curr);
+        let item = self.list.get(self.next);
+        self.next = self.list.next_index(self.next);
         item
     }
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         let my_len = self.list.len();
         (my_len, Some(my_len))
+    }
+}
+
+impl<'a, T> DoubleEndedIterator for Iter<'a, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        let item = self.list.get(self.prev);
+        self.prev = self.list.prev_index(self.prev);
+        item
     }
 }
