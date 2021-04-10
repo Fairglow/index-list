@@ -1,7 +1,7 @@
 [package]
 name = "index_list"
 version = "0.2.4"
-description = "A doubly linked list implemented in Rust using vector indexes"
+description = "A doubly linked list implemented in safe Rust using vector indexes"
 authors = ["Stefan Lindblad <stefan.lindblad@linux.com>"]
 edition = "2018"
 license = "LGPL-2.1-or-later"
