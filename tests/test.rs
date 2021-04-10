@@ -32,11 +32,20 @@ fn test_instantiate() {
     assert_eq!(list.last_index(), null);
     assert_eq!(list.next_index(null), null);
     assert_eq!(list.prev_index(null), null);
+    assert_eq!(list.move_index(null, 0), null);
     assert_eq!(list.get(null), None);
+    assert_eq!(list.get_first(), None);
+    assert_eq!(list.get_last(), None);
     assert_eq!(list.get_mut(null), None);
+    assert_eq!(list.get_mut_first(), None);
+    assert_eq!(list.get_mut_last(), None);
+    assert_eq!(list.peek_next(null), None);
+    assert_eq!(list.peek_prev(null), None);
     assert_eq!(list.remove_first(), None);
     assert_eq!(list.remove_last(), None);
     assert_eq!(list.remove(null), None);
+    assert_eq!(list.index_of(0), null);
+    assert_eq!(list.contains(0), false);
     assert_eq!(list.to_vec(), Vec::<&u64>::new());
     let mut empty_list = IndexList::new();
     list.append(&mut empty_list);
@@ -75,15 +84,19 @@ fn test_append() {
     list.append(&mut other);
     assert_eq!(list.len(), 6);
     assert_eq!(list.capacity(), 6);
-    assert_eq!(list.get(Index::from(3u32)), Some(&"D"));
+    let index = list.move_index(list.first_index(), 3);
+    assert_eq!(list.get(index), Some(&"D"));
     let parts: Vec<&str> = list.iter().map(|e| e.as_ref()).collect();
     assert_eq!(parts.join(", "), "A, B, C, D, E, F");
+    other = list.split(index);
+    assert_eq!(list.to_string(), "[A >< B >< C]");
+    assert_eq!(other.to_string(), "[D >< E >< F]");
 }
 #[test]
 fn test_trim_swap() {
     let mut rng = rand::thread_rng();
     let mut list = IndexList::<u64>::new();
-    for round in 0..4 {
+    for round in 0..16 {
         debug_print_indexes(&list);
         (0..16).for_each(|i| {
             list.insert_last(16 * round + i);
@@ -96,7 +109,7 @@ fn test_trim_swap() {
         });
         debug_print_indexes(&list);
         list.trim_swap();
-        assert_eq!(list.capacity(), 8 * (1 + round) as usize);
+        assert_eq!(list.capacity(), 8 + 8 * round as usize);
         assert_eq!(list.len(), list.capacity());
     }
 }
