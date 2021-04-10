@@ -8,6 +8,7 @@
 //! A new IndexList can be created empty with the `new` method, or created from
 //! an existing vector with `IndexList::from`.
 //!
+use std::cmp::Ordering;
 use std::convert::TryFrom;
 use std::fmt;
 use std::iter::DoubleEndedIterator;
@@ -333,6 +334,42 @@ impl<T> IndexList<T> {
             }
         }
         Index::new()
+    }
+    /// Move to an index `steps` number of elements away. Positive numbers will
+    /// move in the next direction, while negative number in the prev direction.
+    ///
+    /// Returns the index `steps` elements away, or `None` when the end is
+    /// reached.
+    ///
+    /// *NOTE* that indexes are likely not sequential.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let list = IndexList::from(&mut vec!["A", "B", "C", "D", "E"]);
+    /// let mut index = list.first_index();
+    /// index = list.move_index(index, 3);
+    /// // Do something with the 4:th element
+    /// # assert_eq!(list.get(index), Some(&"D"));
+    /// index = list.move_index(index, -2);
+    /// // Do something with the 2:nd element
+    /// # assert_eq!(list.get(index), Some(&"B"));
+    /// index = list.move_index(index, -2);
+    /// assert!(index.is_none());
+    /// ```
+    #[inline]
+    pub fn move_index(&self, index: Index, steps: i32) -> Index {
+        let mut index = index;
+        match steps.cmp(&0) {
+            Ordering::Greater => {
+                (0..steps).for_each(|_| { index = self.next_index(index); });
+            },
+            Ordering::Less => {
+                (0..-steps).for_each(|_| { index = self.prev_index(index); });
+            },
+            Ordering::Equal => (),
+        }
+        index
     }
     /// Get a reference to the first element data, or `None`.
     ///
