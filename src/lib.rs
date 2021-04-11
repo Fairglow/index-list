@@ -879,12 +879,10 @@ impl<T> IndexList<T> {
     }
     #[inline]
     fn remove_elem_at_index(&mut self, this: Index) -> Option<T> {
-        if let Some(at) = this.get() {
+        this.get().map(|at| {
             self.size -= 1;
             self.elems[at].take()
-        } else {
-            None
-        }
+        }).flatten()
     }
     fn new_node(&mut self, elem: Option<T>) -> Index {
         let reuse = self.free.head;
