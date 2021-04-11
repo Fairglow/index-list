@@ -12,6 +12,7 @@ use std::cmp::Ordering;
 use std::convert::TryFrom;
 use std::fmt;
 use std::iter::DoubleEndedIterator;
+use std::mem;
 use std::num::NonZeroU32;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -103,15 +104,11 @@ impl IndexNode {
     }
     #[inline]
     fn new_next(&mut self, next: Index) -> Index {
-        let old_next = self.next;
-        self.next = next;
-        old_next
+        mem::replace(&mut self.next, next)
     }
     #[inline]
     fn new_prev(&mut self, prev: Index) -> Index {
-        let old_prev = self.prev;
-        self.prev = prev;
-        old_prev
+        mem::replace(&mut self.prev, prev)
     }
 }
 
@@ -142,15 +139,11 @@ impl IndexEnds {
     }
     #[inline]
     fn new_head(&mut self, head: Index) -> Index {
-        let old_head = self.head;
-        self.head = head;
-        old_head
+        mem::replace(&mut self.head, head)
     }
     #[inline]
     fn new_tail(&mut self, tail: Index) -> Index {
-        let old_tail = self.tail;
-        self.tail = tail;
-        old_tail
+        mem::replace(&mut self.tail, tail)
     }
     #[inline]
     fn new_both(&mut self, both: Index) {
