@@ -1060,3 +1060,17 @@ impl<'a, T> DoubleEndedIterator for Iter<'a, T> {
         item
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::mem::size_of;
+
+    #[test]
+    fn test_struct_sizes() {
+        assert_eq!(size_of::<Index>(), 4);
+        assert_eq!(size_of::<IndexNode>(), 8);
+        assert_eq!(size_of::<IndexEnds>(), 8);
+        assert_eq!(size_of::<IndexList<u32>>(), 72);
+    }
+}

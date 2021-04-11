@@ -1,4 +1,5 @@
 use index_list::*;
+use std::mem::size_of;
 use std::collections::HashSet;
 use rand::{Rng, seq::SliceRandom};
 
@@ -25,6 +26,7 @@ fn get_raw_index(index: &Index) -> u32 {
 fn test_instantiate() {
     let mut list = IndexList::<u64>::new();
     let null = Index::from(None);
+    assert_eq!(size_of::<Index>(), 4);
     assert_eq!(list.len(), 0);
     assert_eq!(list.capacity(), 0);
     assert_eq!(list.is_index_used(null), false);
