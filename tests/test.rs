@@ -88,11 +88,15 @@ fn test_append() {
     assert_eq!(list.capacity(), 6);
     let index = list.move_index(list.first_index(), 3);
     assert_eq!(list.get(index), Some(&"D"));
+    list.get_mut(index).map(|chr| {
+        *chr = "G";
+    });
+    assert_eq!(list.get(index), Some(&"G"));
     let parts: Vec<&str> = list.iter().map(|e| e.as_ref()).collect();
-    assert_eq!(parts.join(", "), "A, B, C, D, E, F");
+    assert_eq!(parts.join(", "), "A, B, C, G, E, F");
     other = list.split(index);
     assert_eq!(list.to_string(), "[A >< B >< C]");
-    assert_eq!(other.to_string(), "[D >< E >< F]");
+    assert_eq!(other.to_string(), "[G >< E >< F]");
 }
 #[test]
 fn test_trim_swap() {
@@ -101,7 +105,9 @@ fn test_trim_swap() {
     for round in 0..16 {
         debug_print_indexes(&list);
         (0..16).for_each(|i| {
-            list.insert_last(16 * round + i);
+            let num = 16 * round + i;
+            let ndx = list.insert_last(num);
+            assert_eq!(list.get(ndx), Some(&num));
         });
         debug_print_indexes(&list);
         let mut indexes: Vec<usize> = (0..list.capacity()).collect();
@@ -123,7 +129,11 @@ fn test_single_element() {
             0 => list.insert_first(num),
             _ => list.insert_last(num),
         };
-        let val = match num & 2 {
+        match num & 2 {
+            0 => assert_eq!(list.get_first(), Some(&num)),
+            _ => assert_eq!(list.get_last(), Some(&num)),
+        }
+        let val = match num & 4 {
             0 => list.remove_first(),
             _ => list.remove_last(),
         };
