@@ -408,9 +408,12 @@ impl<T> IndexList<T> {
     /// ```rust
     /// # use index_list::IndexList;
     /// # let mut list = IndexList::<u64>::new();
+    /// # list.insert_first(1);
     /// if let Some(data) = list.get_mut_first() {
     ///     // Update the data somehow
+    ///     *data = 0;
     /// }
+    /// # assert_eq!(list.get_first(), Some(&0u64));
     /// ```
     #[inline]
     pub fn get_mut_first(&mut self) -> Option<&mut T> {
@@ -422,9 +425,12 @@ impl<T> IndexList<T> {
     /// ```rust
     /// # use index_list::IndexList;
     /// # let mut list = IndexList::<u64>::new();
+    /// # list.insert_first(2);
     /// if let Some(data) = list.get_mut_last() {
     ///     // Update the data somehow
+    ///     *data *= 2;
     /// }
+    /// # assert_eq!(list.get_last(), Some(&4u64));
     /// ```
     #[inline]
     pub fn get_mut_last(&mut self) -> Option<&mut T> {
@@ -436,10 +442,13 @@ impl<T> IndexList<T> {
     /// ```rust
     /// # use index_list::IndexList;
     /// # let mut list = IndexList::<u64>::new();
+    /// # list.insert_first(0);
     /// # let index = list.first_index();
     /// if let Some(data) = list.get_mut(index) {
     ///     // Update the data somehow
+    ///     *data += 1;
     /// }
+    /// # assert_eq!(list.get_last(), Some(&1u64));
     /// ```
     #[inline]
     pub fn get_mut(&mut self, index: Index) -> Option<&mut T> {
@@ -638,7 +647,7 @@ impl<T> IndexList<T> {
         }
         elem_opt
     }
-    /// Create a new iterator over all the element.
+    /// Create a new iterator over all the elements.
     ///
     /// Example:
     /// ```rust
@@ -650,6 +659,20 @@ impl<T> IndexList<T> {
     #[inline]
     pub fn iter(&self) -> Iter<T> {
         Iter { list: &self, next: self.first_index(), prev: self.last_index() }
+    }
+    /// Create a consuming iterator over all the elements.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let mut list = IndexList::from(&mut vec!["A", "B", "C"]);
+    /// let items: Vec<&str> = list.into_iter().collect();
+    /// assert_eq!(list.len(), 0);
+    /// assert_eq!(items, vec!["A", "B", "C"]);
+    /// ```
+    #[inline]
+    pub fn into_iter(&mut self) -> IntoIter<T> {
+        IntoIter { 0: self }
     }
     /// Create a vector for all elements.
     ///
@@ -1049,6 +1072,21 @@ impl<'a, T> DoubleEndedIterator for Iter<'a, T> {
         let item = self.list.get(self.prev);
         self.prev = self.list.prev_index(self.prev);
         item
+    }
+}
+
+pub struct IntoIter<'a, T>(&'a mut IndexList<T>);
+
+impl<'a, T> Iterator for IntoIter<'a, T> {
+    type Item = T;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.remove_first()
+    }
+}
+
+impl<'a, T> DoubleEndedIterator for IntoIter<'a, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.remove_last()
     }
 }
 
