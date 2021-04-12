@@ -2,15 +2,15 @@
 
 An index list is a hybrid between a vector and a linked-list, with some of the properties of each. Every element has an index in the vector and can be accessed directly there. This index is persistent as long as the element remains in the list and is not affected by other elements of the list. An index does not change if the element is moved in the list, nor when other elements are inserted or removed from the list.
 
-The user is not meant to know the exact value stored inside of the index and should not create any Indexes, but can safely copy an existing one. The index should only be used for the purpose of accessing the element data at that location or to traverse the list. This is why almost all methods on the Indexes are private.
+The user is not meant to know the exact value of the index and should not create any Indexes themselves, but can safely copy an existing one. The index should only be used for the purpose of accessing the element data at that location or to traverse the list. This is why almost all methods on the Indexes are private.
 
-When a new element is inserted in the list, its index will be returned from that method, but the user can safely ignore that value as the element can be found anyway by walking the list.
+When a new element is inserted in the list, its index will be returned from that method, but the user can safely ignore that value because the element is available by walking the list anyway.
 
 Old indexes will be reused in FIFO fashion, before new indexes are added.
 
 ## The index list design
 
-The list elements are placed in a vector, which is why they can be accessed directly, where each element knows the index of the element before and after it, as well as the data contained at that index. This indirection makes it easy to implement the list safely in Rust, because the traditional next and previous pointers are replaced by their respective indexes.
+The list elements are placed in a vector, which is why they can be accessed directly, where each element knows the index of the element before and after it, as well as the data contained at that index. This indirection makes it easy to implement the list safely in Rust, because the traditional next and previous pointers are replaced by their respective indexes, which are just numbers.
 
 You can think of a list node like this:
 ```rust
@@ -24,11 +24,13 @@ Where an element without data is free and if either `next` or `prev` is `None` t
 
 ## The element vector
 
-Besides providing direct access to the element, the vector for the elements provide better locality between them, which is useful when walking through the list as it is likely to mean fewer cache misses. The element will however appear scrambled in the vector and only by walking the list can the correct order be established.
+Besides providing direct access to the element, the vector for the elements provide better locality between them, which is useful when walking through the list as it is likely to mean fewer cache misses. The elements will however appear scrambled in the vector and only by walking the list can the correct order be established.
 
 ## Walking the list
 
-To walk the list the user needs a starting index. One can be obtained from either `first_index` or `last_index` method calls. Then use either the the `next_index`, or `prev_index` methods to move in the respective direction. An index is persistent in the list as long as the element is not removed and can be stored and used later. The indexes are typically not sequential as the list is traversed.
+To walk the list the user needs a starting index. One can be obtained from either `first_index` or `last_index` method calls. Then use either the `next_index`, or `prev_index` methods to move in the respective direction. An index is persistent in the list as long as the element is not removed and can be stored and used later. The indexes are typically not sequential as the list is traversed.
+
+See the included [example code](examples/indexlist.rs) for how this works.
 
 Note that any calls to the `trim_swap` method, may invalidate one or more index. It van be verified because any index greater than the `capacity` has been moved. To prevent this invalidation, you can hold a reference to the list as well as the index, but this will also block any and all modifications to the list while the reference is held.
 
@@ -40,35 +42,35 @@ There is a safe method (`trim_safe`), which may not actually shrink the list at 
 
 Then there is the unsafe method (`trim_swap`) which will swap the elements to move the free ones to the end of the vector and then truncate the vector. It is called unsafe because all indexes above the cut-off point of the number needed to contain all used elements will be invalidated. Therefore if the user has stored these indexes anywhere they will not return the correct data anymore.
 
-## Unsafe
+## Safe Rust
 
-The index list has no unsafe code blocks. The reason is that it does not use pointers between the element, but their index in the vector instead.
+The index list has no unsafe code blocks. The reason is that it does not use pointers between the elements, but their index in the vector instead.
 
-However the `trim_swap` method is considered unsafe, but for a different reason and that is because it may change the index of some elements. Therefore any stored indexes may be invalid after the method call, or point to a different element. Use it wisely and make sure no such indexes are kept at that time.
+However the `trim_swap` method is considered unsafe, but for a totally different reason, because it may change the index of some elements. Therefore any cached indexes may be invalid after the method call and will eventually point to a different element when that index is reused. Use the method wisely and make sure no such indexes are kept at that time.
 
 ## Performance
 
-In my simple benchmark tests the index list appears to offer roughly twice the performance of LinkedList, plus a some functionality that is only experimental, such as the cursor methods.
+In my simple benchmark tests the index list appears to offer more than twice the performance of LinkedList, plus it offers some functionality that is only experimental for LinkedList, such as the cursor methods.
 
-This may not reflect any real-life performance difference and you are urged to evaluate this in your own use-case rather than relying on the figures provided by the included benchmarks.
+However, this may not reflect any real-life performance difference and you are urged to evaluate this in your own use-case rather than relying on the figures provided by the included benchmarks.
 
 ## Reasons to use IndexList
 
-* Data is frequently inserted or removed from the body of the list (not the ends).
-* Data is reordered often, or sorted.
+* Data that is frequently inserted or removed from the body of the list (not the ends).
+* Data that is reordered often, or sorted.
 * Need persistent indexes even when data is inserted or removed.
 * Want to maintain skip elements for taking larger steps through the list.
 * Need to cache certain elements for fast retrieval, without holding a reference to it.
 
 ## Reasons to use an alternative
 
-* Data is mainly inserted and removed at the ends of the list, then VecDeque is likely a better alternative.
-* Merges and splits of the lists are common; these are heavy `O(n)` operations in this design.
+* Data that is mainly inserted and removed at the ends of the list, then VecDeque is likely a better alternative.
+* Merges and splits of the lists are common; these are heavy `O(n)` operations in the IndexList design. The LinkedList is likely much better in this respect.
 * When handling lists longer than 4 billion entries, as this list is limited to 32-bit indexes.
-* When you need to shrink the list often, because `trim_swap` is expensive and has the side-effect of potentially invalidating indexes.
+* When you need to shrink the list often, because `trim_swap` is expensive and has the side-effect of potentially invalidating indexes. For instance a LinkedList does not require trimming at all.
 
 This is not an exhaustive list of alternatives, and I may have missed important choices, but these were the ones that I was aware of at the time of writing this.
 
-* `std::collection::LinkedList`
-* `std::collections::vec_deque::VecDeque`
-* `Vec`
+* [`std::collections::LinkedList`](https://doc.rust-lang.org/std/collections/struct.LinkedList.html)
+* [`std::collections::VecDeque`](https://doc.rust-lang.org/std/collections/struct.VecDeque.html)
+* [`std::vec::Vec`](https://doc.rust-lang.org/std/vec/struct.Vec.html)
