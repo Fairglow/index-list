@@ -459,7 +459,28 @@ impl<T> IndexList<T> {
         }
         None
     }
+    /// Swap the element data between two indexes.
+    ///
+    /// Both indexes must be valid.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let mut list = IndexList::<u64>::new();
+    /// # list.insert_first(1);
+    /// # list.insert_last(2);
+    /// list.swap_index(list.first_index(), list.last_index());
+    /// # assert_eq!(list.get_first(), Some(&2u64));
+    /// # assert_eq!(list.get_last(), Some(&1u64));
+    /// ```
     #[inline]
+    pub fn swap_index(&mut self, this: Index, that: Index) {
+        if let Some(here) = this.get() {
+            if let Some(there) = that.get() {
+                self.swap_data(here, there);
+            }
+        }
+    }
     /// Peek at next element data, after the index, if any.
     ///
     /// Returns `None` if there is no next index in the list.
@@ -474,10 +495,10 @@ impl<T> IndexList<T> {
     /// #   assert_eq!(*data, 2);
     /// }
     /// ```
+    #[inline]
     pub fn peek_next(&self, index: Index) -> Option<&T> {
         self.get(self.next_index(index))
     }
-    #[inline]
     /// Peek at previous element data, before the index, if any.
     ///
     /// Returns `None` if there is no previous index in the list.
@@ -492,6 +513,7 @@ impl<T> IndexList<T> {
     /// #   assert_eq!(*data, 2);
     /// }
     /// ```
+    #[inline]
     pub fn peek_prev(&self, index: Index) -> Option<&T> {
         self.get(self.prev_index(index))
     }
@@ -670,6 +692,7 @@ impl<T> IndexList<T> {
     /// assert_eq!(list.len(), 0);
     /// assert_eq!(items, vec!["A", "B", "C"]);
     /// ```
+    #[allow(clippy::wrong_self_convention)]
     #[inline]
     pub fn into_iter(&mut self) -> IntoIter<T> {
         IntoIter { 0: self }
@@ -862,6 +885,10 @@ impl<T> IndexList<T> {
     #[inline]
     fn get_indexnode(&self, at: usize) -> &IndexNode {
         &self.nodes[at]
+    }
+    #[inline]
+    fn swap_data(&mut self, here: usize, there: usize) {
+        self.elems.swap(here, there);
     }
     #[inline]
     fn set_prev(&mut self, index: Index, new_prev: Index) -> Index {
