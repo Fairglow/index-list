@@ -24,7 +24,7 @@ Where an element without data is free and if either `next` or `prev` is `None` t
 
 ## The element vector
 
-Besides providing direct access to the element, the vector for the elements provide better locality between them, which is useful when walking through the list as it is likely to mean fewer cache misses. The elements will however appear scrambled in the vector and only by walking the list can the correct order be established.
+Besides providing direct access to the element, the vector for the elements provide better memory efficiency and locality between them, which is useful when walking through the list as it is likely to mean fewer cache misses. The elements will however appear scrambled in the vector and only by walking the list can the correct order be established.
 
 ## Walking the list
 
