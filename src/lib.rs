@@ -8,6 +8,8 @@
 //! A new IndexList can be created empty with the `new` method, or created from
 //! an existing vector with `IndexList::from`.
 //!
+#![deny(unsafe_code)]
+
 use std::cmp::Ordering;
 use std::convert::TryFrom;
 use std::fmt;
