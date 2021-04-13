@@ -79,6 +79,7 @@ fn indexlist_walk(n: u32) {
         accum += *list.get(index).unwrap() as u64;
         index = list.next_index(index);
     };
+    assert_eq!(accum, 52433920);
     index = list.last_index();
     while index.is_some() {
         accum -= *list.get(index).unwrap() as u64;
@@ -92,6 +93,7 @@ fn indexlist_iter(n: u32) {
     (1..=n).rev().for_each(|i| { list.insert_first(i); });
     let mut accum: u64 = 0;
     list.iter().for_each(|i| { accum += *i as u64; });
+    assert_eq!(accum, 52433920);
     list.iter().rev().for_each(|i| { accum -= *i as u64; });
     assert_eq!(accum, 0);
 }
@@ -101,6 +103,7 @@ fn linkedlist_iter(n: u32) {
     (1..=n).rev().for_each(|i| { list.push_front(i); });
     let mut accum: u64 = 0;
     list.iter().for_each(|i| { accum += *i as u64; });
+    assert_eq!(accum, 52433920);
     list.iter().rev().for_each(|i| { accum -= *i as u64; });
     assert_eq!(accum, 0);
 }
@@ -123,11 +126,11 @@ fn criterion_benchmark(c: &mut Criterion) {
         vecdeque_body(black_box(count))));
     c.bench_function("indexlist-walk", |b| b.iter(||
         indexlist_walk(black_box(count))));
-    c.bench_function("linkedlist-iter", |b| b.iter(||
-        linkedlist_iter(black_box(count))));
     c.bench_function("indexlist-iter", |b| b.iter(||
         indexlist_iter(black_box(count))));
-}
+    c.bench_function("linkedlist-iter", |b| b.iter(||
+        linkedlist_iter(black_box(count))));
+    }
 
 criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);
