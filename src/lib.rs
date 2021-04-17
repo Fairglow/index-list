@@ -685,20 +685,21 @@ impl<T> IndexList<T> {
     pub fn iter(&self) -> Iter<T> {
         Iter { list: &self, next: self.first_index(), prev: self.last_index() }
     }
-    /// Create a consuming iterator over all the elements.
+    /// Create a draining iterator over all the elements.
+    ///
+    /// This iterator will remove the elements as it is iterating over them.
     ///
     /// Example:
     /// ```rust
     /// # use index_list::IndexList;
     /// # let mut list = IndexList::from(&mut vec!["A", "B", "C"]);
-    /// let items: Vec<&str> = list.into_iter().collect();
+    /// let items: Vec<&str> = list.drain_iter().collect();
     /// assert_eq!(list.len(), 0);
     /// assert_eq!(items, vec!["A", "B", "C"]);
     /// ```
-    #[allow(clippy::wrong_self_convention)]
     #[inline]
-    pub fn into_iter(&mut self) -> IntoIter<T> {
-        IntoIter { 0: self }
+    pub fn drain_iter(&mut self) -> DrainIter<T> {
+        DrainIter { 0: self }
     }
     /// Create a vector for all elements.
     ///
@@ -1106,22 +1107,31 @@ impl<'a, T> DoubleEndedIterator for Iter<'a, T> {
     }
 }
 
-pub struct IntoIter<'a, T>(&'a mut IndexList<T>);
+pub struct DrainIter<'a, T>(&'a mut IndexList<T>);
 
-impl<'a, T> Iterator for IntoIter<'a, T> {
+impl<'a, T> Iterator for DrainIter<'a, T> {
     type Item = T;
     fn next(&mut self) -> Option<Self::Item> {
         self.0.remove_first()
     }
 }
 
-impl<'a, T> DoubleEndedIterator for IntoIter<'a, T> {
+impl<'a, T> DoubleEndedIterator for DrainIter<'a, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.remove_last()
     }
 }
 
-impl<T> FusedIterator for IntoIter<'_, T> {}
+impl<T> FusedIterator for DrainIter<'_, T> {}
+
+impl<'a, T> IntoIterator for &'a IndexList<T> {
+    type Item = &'a T;
+    type IntoIter = Iter<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
 
 #[cfg(test)]
 mod tests {
