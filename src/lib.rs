@@ -14,10 +14,12 @@ use std::cmp::Ordering;
 use std::convert::TryFrom;
 use std::fmt;
 use std::iter::DoubleEndedIterator;
+use std::iter::{Extend, FromIterator, FusedIterator};
 use std::mem;
 use std::num::NonZeroU32;
-use std::iter::{Extend, FromIterator, FusedIterator};
 
+/// Vector index for the elements in the list. They are typically not
+/// squential.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct Index(Option<NonZeroU32>);
 
@@ -27,17 +29,17 @@ impl Index {
         Index { 0: None }
     }
     #[inline]
-    /// Returns `true` for a valid index
+    /// Returns `true` for a valid index.
     ///
     /// A valid index can be used in IndexList method calls.
     pub fn is_some(&self) -> bool {
         self.0.is_some()
     }
     #[inline]
-    /// Returns `true` if the index is invalid
+    /// Returns `true` for an invalid index.
     ///
-    /// An invalid index should not be used in any IndexList method calls
-    /// because they will always cause `None` to be returned.
+    /// An invalid index will always be ignored and have `None` returned from
+    /// any IndexList method call that returns something.
     pub fn is_none(&self) -> bool {
         self.0.is_none()
     }
@@ -103,7 +105,10 @@ struct IndexNode {
 impl IndexNode {
     #[inline]
     fn new() -> IndexNode {
-        IndexNode { next: Index::new(), prev: Index::new() }
+        IndexNode {
+            next: Index::new(),
+            prev: Index::new(),
+        }
     }
     #[inline]
     fn new_next(&mut self, next: Index) -> Index {
@@ -130,7 +135,10 @@ struct IndexEnds {
 impl IndexEnds {
     #[inline]
     fn new() -> Self {
-        IndexEnds { head: Index::new(), tail: Index::new() }
+        IndexEnds {
+            head: Index::new(),
+            tail: Index::new(),
+        }
     }
     #[inline]
     fn clear(&mut self) {
@@ -161,6 +169,7 @@ impl fmt::Display for IndexEnds {
     }
 }
 
+/// Doubly-linked list implemented in safe Rust.
 #[derive(Debug)]
 pub struct IndexList<T> {
     elems: Vec<Option<T>>,
@@ -358,11 +367,15 @@ impl<T> IndexList<T> {
         let mut index = index;
         match steps.cmp(&0) {
             Ordering::Greater => {
-                (0..steps).for_each(|_| { index = self.next_index(index); });
-            },
+                (0..steps).for_each(|_| {
+                    index = self.next_index(index);
+                });
+            }
             Ordering::Less => {
-                (0..-steps).for_each(|_| { index = self.prev_index(index); });
-            },
+                (0..-steps).for_each(|_| {
+                    index = self.prev_index(index);
+                });
+            }
             Ordering::Equal => (),
         }
         index
@@ -535,7 +548,9 @@ impl<T> IndexList<T> {
     /// ```
     #[inline]
     pub fn contains(&self, elem: T) -> bool
-    where T: PartialEq {
+    where
+        T: PartialEq,
+    {
         self.elems.contains(&Some(elem))
     }
     /// Returns the index of the element containg the data.
@@ -552,9 +567,15 @@ impl<T> IndexList<T> {
     /// ```
     #[inline]
     pub fn index_of(&self, elem: T) -> Index
-    where T: PartialEq {
+    where
+        T: PartialEq,
+    {
         Index::from(self.elems.iter().position(|e| {
-            if let Some(data) = e { data == &elem } else { false }
+            if let Some(data) = e {
+                data == &elem
+            } else {
+                false
+            }
         }))
     }
     /// Insert a new element at the beginning.
@@ -683,7 +704,11 @@ impl<T> IndexList<T> {
     /// ```
     #[inline]
     pub fn iter(&self) -> Iter<T> {
-        Iter { list: &self, next: self.first_index(), prev: self.last_index() }
+        Iter {
+            list: &self,
+            next: self.first_index(),
+            prev: self.last_index(),
+        }
     }
     /// Create a draining iterator over all the elements.
     ///
@@ -933,10 +958,12 @@ impl<T> IndexList<T> {
     }
     #[inline]
     fn remove_elem_at_index(&mut self, this: Index) -> Option<T> {
-        this.get().map(|at| {
-            self.size -= 1;
-            self.elems[at].take()
-        }).flatten()
+        this.get()
+            .map(|at| {
+                self.size -= 1;
+                self.elems[at].take()
+            })
+            .flatten()
     }
     fn new_node(&mut self, elem: Option<T>) -> Index {
         let reuse = self.free.head;
@@ -993,7 +1020,9 @@ impl<T> IndexList<T> {
         debug_assert!(self.is_index_used(that));
         let prev = self.set_prev(that, this);
         let old_next = self.set_next(prev, this);
-        if old_next.is_some() { debug_assert_eq!(old_next, that); }
+        if old_next.is_some() {
+            debug_assert_eq!(old_next, that);
+        }
         self.set_prev(this, prev);
         self.set_next(this, that);
         self.linkin_head(prev, this, that);
@@ -1004,7 +1033,9 @@ impl<T> IndexList<T> {
         debug_assert!(self.is_index_used(that));
         let next = self.set_next(that, this);
         let old_prev = self.set_prev(next, this);
-        if old_prev.is_some() { debug_assert_eq!(old_prev, that); }
+        if old_prev.is_some() {
+            debug_assert_eq!(old_prev, that);
+        }
         self.set_prev(this, that);
         self.set_next(this, next);
         self.linkin_tail(that, this, next);
@@ -1014,9 +1045,13 @@ impl<T> IndexList<T> {
         let next = self.set_next(this, Index::new());
         let prev = self.set_prev(this, Index::new());
         let old_prev = self.set_prev(next, prev);
-        if old_prev.is_some() { debug_assert_eq!(old_prev, this); }
+        if old_prev.is_some() {
+            debug_assert_eq!(old_prev, this);
+        }
         let old_next = self.set_next(prev, next);
-        if old_next.is_some() { debug_assert_eq!(old_next, this); }
+        if old_next.is_some() {
+            debug_assert_eq!(old_next, this);
+        }
         (prev, next)
     }
     fn linkout_used(&mut self, this: Index) {
@@ -1062,7 +1097,9 @@ impl<T> IndexList<T> {
 }
 
 impl<T> fmt::Display for IndexList<T>
-where T: fmt::Display {
+where
+    T: fmt::Display,
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let elems: Vec<String> = self.iter().map(|x| format!("{}", x)).collect();
         write!(f, "[{}]", elems.join(" >< "))
@@ -1078,7 +1115,7 @@ impl<T> From<T> for IndexList<T> {
 }
 
 impl<T> FromIterator<T> for IndexList<T> {
-    fn from_iter<I: IntoIterator<Item=T>>(iter: I) -> Self {
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         let mut list = IndexList::new();
         for elem in iter {
             list.insert_last(elem);
@@ -1088,13 +1125,15 @@ impl<T> FromIterator<T> for IndexList<T> {
 }
 
 impl<T> Extend<T> for IndexList<T> {
-    fn extend<I: IntoIterator<Item=T>>(&mut self, iter: I) {
+    fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
         for elem in iter {
             self.insert_last(elem);
         }
     }
 }
 
+/// A double-ended iterator over all the elements in the list. It is fused and
+/// can be reversed.
 pub struct Iter<'a, T> {
     list: &'a IndexList<T>,
     next: Index,
@@ -1125,6 +1164,8 @@ impl<'a, T> DoubleEndedIterator for Iter<'a, T> {
     }
 }
 
+/// A consuming interator that will remove elements from the list as it is
+/// iterating over them. The iterator is fused and can also be reversed.
 pub struct DrainIter<'a, T>(&'a mut IndexList<T>);
 
 impl<'a, T> Iterator for DrainIter<'a, T> {
