@@ -16,6 +16,7 @@ use std::fmt;
 use std::iter::DoubleEndedIterator;
 use std::mem;
 use std::num::NonZeroU32;
+use std::iter::FusedIterator;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct Index(Option<NonZeroU32>);
@@ -1095,6 +1096,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
         (my_len, Some(my_len))
     }
 }
+impl<T> FusedIterator for Iter<'_, T> {}
 
 impl<'a, T> DoubleEndedIterator for Iter<'a, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
@@ -1118,6 +1120,8 @@ impl<'a, T> DoubleEndedIterator for IntoIter<'a, T> {
         self.0.remove_last()
     }
 }
+
+impl<T> FusedIterator for IntoIter<'_, T> {}
 
 #[cfg(test)]
 mod tests {
