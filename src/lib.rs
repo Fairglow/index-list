@@ -16,7 +16,7 @@ use std::fmt;
 use std::iter::DoubleEndedIterator;
 use std::mem;
 use std::num::NonZeroU32;
-use std::iter::{FromIterator, FusedIterator};
+use std::iter::{Extend, FromIterator, FusedIterator};
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct Index(Option<NonZeroU32>);
@@ -1084,6 +1084,14 @@ impl<T> FromIterator<T> for IndexList<T> {
             list.insert_last(elem);
         }
         list
+    }
+}
+
+impl<T> Extend<T> for IndexList<T> {
+    fn extend<I: IntoIterator<Item=T>>(&mut self, iter: I) {
+        for elem in iter {
+            self.insert_last(elem);
+        }
     }
 }
 
