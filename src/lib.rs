@@ -16,7 +16,7 @@ use std::fmt;
 use std::iter::DoubleEndedIterator;
 use std::mem;
 use std::num::NonZeroU32;
-use std::iter::FusedIterator;
+use std::iter::{FromIterator, FusedIterator};
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct Index(Option<NonZeroU32>);
@@ -1073,6 +1073,16 @@ impl<T> From<T> for IndexList<T> {
     fn from(elem: T) -> IndexList<T> {
         let mut list = IndexList::new();
         list.insert_last(elem);
+        list
+    }
+}
+
+impl<T> FromIterator<T> for IndexList<T> {
+    fn from_iter<I: IntoIterator<Item=T>>(iter: I) -> Self {
+        let mut list = IndexList::new();
+        for elem in iter {
+            list.insert_last(elem);
+        }
         list
     }
 }
