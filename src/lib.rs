@@ -25,7 +25,7 @@ pub struct Index(Option<NonZeroU32>);
 
 impl Index {
     #[inline]
-    fn new() -> Index {
+    pub fn new() -> Index {
         Index { 0: None }
     }
     #[inline]
@@ -312,9 +312,12 @@ impl<T> IndexList<T> {
         if let Some(ndx) = index.get() {
             if let Some(node) = self.nodes.get(ndx) {
                 return node.next;
+            } else {
+                Index::new()
             }
+        } else {
+            self.first_index()
         }
-        Index::new()
     }
     /// Returns the index of the previous element, before index, or `None` when
     /// the beginning is reached.
@@ -336,9 +339,12 @@ impl<T> IndexList<T> {
         if let Some(ndx) = index.get() {
             if let Some(node) = self.nodes.get(ndx) {
                 return node.prev;
+            } else {
+                Index::new()
             }
+        } else {
+            self.last_index()
         }
-        Index::new()
     }
     /// Move to an index `steps` number of elements away. Positive numbers will
     /// move in the next direction, while negative number in the prev direction.

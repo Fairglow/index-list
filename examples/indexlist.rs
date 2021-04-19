@@ -1,4 +1,4 @@
-use index_list::IndexList;
+use index_list::{Index, IndexList};
 
 fn main() {
     let name = "IndexList";
@@ -13,8 +13,8 @@ fn main() {
              list.get(list.move_index(index, -3)).unwrap(),
              list.get_first().unwrap(),
              list.get_last().unwrap());
-    let mut index = list.first_index();
-    while index.is_some() {
+    let mut index = Index::new();
+    while let index = list.next_index(index) {
         list.get_mut(index).map(|s| {
             *s = if s.chars().last().unwrap().is_ascii_punctuation() {
                 s.get(0..s.len()-1).unwrap()
@@ -22,7 +22,6 @@ fn main() {
                 &s
             }.to_string().to_lowercase();
         });
-        index = list.next_index(index);
     }
     println!("{}", list);
 }
