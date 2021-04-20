@@ -42,6 +42,20 @@ There is a safe method (`trim_safe`), which may not actually shrink the list at 
 
 Then there is the unsafe method (`trim_swap`) which will swap the elements to move the free ones to the end of the vector and then truncate the vector. It is called unsafe because all indexes above the cut-off point of the number needed to contain all used elements will be invalidated. Therefore if the user has stored these indexes anywhere they will not return the correct data anymore.
 
+## Mutable iterator
+
+There is currently no `iter_mut` method, however there is a simple and safe pattern to achieve the same effect, using a `while` loop:
+
+```rust
+let mut index = list.first_index();
+while index.is_some() {
+    let elem = list.get_mut(index).unwrap();
+    *elem = elem.to_string().to_lowercase();
+    index = list.next_index(index);
+}
+```
+See [iter_mut_alternative.rs](examples/iter_mut_alternative.rs) for the full example.
+
 ## Safe Rust
 
 The index list has no unsafe code blocks. The reason is that it does not use pointers between the elements, but their index in the vector instead.

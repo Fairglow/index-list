@@ -80,6 +80,18 @@ fn basic_insert_remove() {
     assert_eq!(list.capacity(), 0);
 }
 #[test]
+fn test_while_get_mut() {
+    let mut strings = "A B C".split_whitespace().map(String::from).collect();
+    let mut list: IndexList<String> = IndexList::from(&mut strings);
+    let mut index = list.first_index();
+    while index.is_some() {
+        let elem = list.get_mut(index).unwrap();
+        *elem = elem.to_string().to_lowercase();
+        index = list.next_index(index);
+    }
+    assert_eq!(list.to_string(), "[a >< b >< c]");
+}
+#[test]
 fn test_append() {
     let mut list = IndexList::from(&mut vec!["A", "B", "C"]);
     let mut other = IndexList::from(&mut vec!["D", "E", "F"]);
