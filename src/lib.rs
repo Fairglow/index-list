@@ -295,6 +295,8 @@ impl<T> IndexList<T> {
     /// Returns the index of the next element, after index, or `None` when the
     /// end is reached.
     ///
+    /// If index is `None` then the first index in the list is returned.
+    ///
     /// *NOTE* that indexes are likely not sequential.
     ///
     /// Example:
@@ -311,7 +313,7 @@ impl<T> IndexList<T> {
     pub fn next_index(&self, index: Index) -> Index {
         if let Some(ndx) = index.get() {
             if let Some(node) = self.nodes.get(ndx) {
-                return node.next;
+                node.next
             } else {
                 Index::new()
             }
@@ -321,6 +323,8 @@ impl<T> IndexList<T> {
     }
     /// Returns the index of the previous element, before index, or `None` when
     /// the beginning is reached.
+    ///
+    /// If index is `None` then the last index in the list is returned.
     ///
     /// *NOTE* that indexes are likely not sequential.
     ///
@@ -338,7 +342,7 @@ impl<T> IndexList<T> {
     pub fn prev_index(&self, index: Index) -> Index {
         if let Some(ndx) = index.get() {
             if let Some(node) = self.nodes.get(ndx) {
-                return node.prev;
+                node.prev
             } else {
                 Index::new()
             }
