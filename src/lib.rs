@@ -12,6 +12,7 @@
 
 use std::cmp::Ordering;
 use std::convert::TryFrom;
+use std::default::Default;
 use std::fmt;
 use std::iter::DoubleEndedIterator;
 use std::iter::{Extend, FromIterator, FusedIterator};
@@ -26,7 +27,7 @@ pub struct Index(Option<NonZeroU32>);
 impl Index {
     #[inline]
     pub fn new() -> Index {
-        Index { 0: None }
+        Default::default()
     }
     #[inline]
     /// Returns `true` for a valid index.
@@ -105,10 +106,7 @@ struct IndexNode {
 impl IndexNode {
     #[inline]
     fn new() -> IndexNode {
-        IndexNode {
-            next: Index::new(),
-            prev: Index::new(),
-        }
+        Default::default()
     }
     #[inline]
     fn new_next(&mut self, next: Index) -> Index {
@@ -133,12 +131,10 @@ struct IndexEnds {
 }
 
 impl IndexEnds {
+    #[allow(dead_code)]
     #[inline]
     fn new() -> Self {
-        IndexEnds {
-            head: Index::new(),
-            tail: Index::new(),
-        }
+        Default::default()
     }
     #[inline]
     fn clear(&mut self) {
@@ -181,7 +177,11 @@ pub struct IndexList<T> {
 
 impl<T> Default for IndexList<T> {
     fn default() -> Self {
-        Self::new()
+        IndexList::<T> {
+            elems: Vec::new(),
+            nodes: Vec::new(),
+            ..Default::default()
+        }
     }
 }
 
@@ -194,14 +194,10 @@ impl<T> IndexList<T> {
     ///
     /// let list = IndexList::<u64>::new();
     /// ```
+    #[allow(dead_code)]
+    #[inline]
     pub fn new() -> Self {
-        IndexList {
-            elems: Vec::new(),
-            nodes: Vec::new(),
-            used: IndexEnds::new(),
-            free: IndexEnds::new(),
-            size: 0,
-        }
+        Default::default()
     }
     /// Returns the current capacity of the list.
     ///
