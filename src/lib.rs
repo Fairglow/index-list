@@ -51,13 +51,7 @@ impl Index {
     #[inline]
     fn set(mut self, index: Option<usize>) -> Self {
         if let Some(n) = index {
-            if let Ok(num) = NonZeroU32::try_from(n as u32 + 1) {
-                self.0 = Some(num);
-            } else {
-                self.0 = None;
-            }
-        } else {
-            self.0 = None;
+            self.0 = NonZeroU32::try_from(n as u32 + 1).ok()
         }
         self
     }
