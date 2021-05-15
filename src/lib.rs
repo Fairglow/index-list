@@ -22,7 +22,9 @@ use std::num::NonZeroU32;
 /// Vector index for the elements in the list. They are typically not
 /// squential.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub struct Index(Option<NonZeroU32>);
+pub struct Index {
+    ndx: Option<NonZeroU32>
+}
 
 impl Index {
     #[inline]
@@ -34,7 +36,7 @@ impl Index {
     ///
     /// A valid index can be used in IndexList method calls.
     pub fn is_some(&self) -> bool {
-        self.0.is_some()
+        self.ndx.is_some()
     }
     #[inline]
     /// Returns `true` for an invalid index.
@@ -42,16 +44,16 @@ impl Index {
     /// An invalid index will always be ignored and have `None` returned from
     /// any IndexList method call that returns something.
     pub fn is_none(&self) -> bool {
-        self.0.is_none()
+        self.ndx.is_none()
     }
     #[inline]
     fn get(&self) -> Option<usize> {
-        Some(self.0?.get() as usize - 1)
+        Some(self.ndx?.get() as usize - 1)
     }
     #[inline]
     fn set(mut self, index: Option<usize>) -> Self {
         if let Some(n) = index {
-            self.0 = NonZeroU32::try_from(n as u32 + 1).ok()
+            self.ndx = NonZeroU32::try_from(n as u32 + 1).ok()
         }
         self
     }
@@ -83,7 +85,7 @@ impl From<Option<usize>> for Index {
 
 impl fmt::Display for Index {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if let Some(ndx) = self.0 {
+        if let Some(ndx) = self.ndx {
             write!(f, "{}", ndx)
         } else {
             write!(f, "|")
