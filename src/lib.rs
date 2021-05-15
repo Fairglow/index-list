@@ -176,7 +176,9 @@ impl<T> Default for IndexList<T> {
         IndexList::<T> {
             elems: Vec::new(),
             nodes: Vec::new(),
-            ..Default::default()
+            used: IndexEnds::new(),
+            free: IndexEnds::new(),
+            size: 0,
         }
     }
 }
