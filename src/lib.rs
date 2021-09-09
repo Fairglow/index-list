@@ -709,7 +709,7 @@ impl<T> IndexList<T> {
     #[inline]
     pub fn iter(&self) -> Iter<T> {
         Iter {
-            list: &self,
+            list: self,
             next: self.first_index(),
             prev: self.last_index(),
         }
@@ -983,7 +983,7 @@ impl<T> IndexList<T> {
         Index::from(pos)
     }
     fn linkin_free(&mut self, this: Index) {
-        debug_assert_eq!(self.is_index_used(this), false);
+        debug_assert!(!self.is_index_used(this));
         let prev = self.free.tail;
         self.set_next(prev, this);
         self.set_prev(this, prev);
