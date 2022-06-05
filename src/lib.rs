@@ -728,7 +728,7 @@ impl<T> IndexList<T> {
     /// ```
     #[inline]
     pub fn drain_iter(&mut self) -> DrainIter<T> {
-        DrainIter { 0: self }
+        DrainIter(self)
     }
     /// Create a vector for all elements.
     ///
@@ -963,11 +963,10 @@ impl<T> IndexList<T> {
     #[inline]
     fn remove_elem_at_index(&mut self, this: Index) -> Option<T> {
         this.get()
-            .map(|at| {
+            .and_then(|at| {
                 self.size -= 1;
                 self.elems[at].take()
             })
-            .flatten()
     }
     fn new_node(&mut self, elem: Option<T>) -> Index {
         let reuse = self.free.head;
