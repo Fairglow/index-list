@@ -1,11 +1,11 @@
-use index_list::*;
+use index_list::{IndexList, ListIndex};
 use std::mem::size_of;
 use std::collections::HashSet;
 use rand::{Rng, seq::SliceRandom};
 
 fn debug_print_indexes(list: &IndexList<u64>) {
     let mut index = list.first_index();
-    let mut last = Index::from(None);
+    let mut last = ListIndex::from(None);
     print!("[ ");
     while index.is_some() {
         if last.is_some() {
@@ -18,15 +18,15 @@ fn debug_print_indexes(list: &IndexList<u64>) {
     }
     println!(" ]");
 }
-fn get_raw_index(index: &Index) -> u32 {
+fn get_raw_index(index: &ListIndex) -> u32 {
     index.to_string().parse::<u32>().unwrap_or(0)
 }
 
 #[test]
 fn test_instantiate() {
     let mut list = IndexList::<u64>::new();
-    let null = Index::from(None);
-    assert_eq!(size_of::<Index>(), 4);
+    let null = ListIndex::from(None);
+    assert_eq!(size_of::<ListIndex>(), 4);
     assert_eq!(list.len(), 0);
     assert_eq!(list.capacity(), 0);
     assert_eq!(list.is_index_used(null), false);
@@ -70,7 +70,7 @@ fn basic_insert_remove() {
     list.trim_swap();
     (0..count).rev().for_each(|i| {
         assert_eq!(list.remove_first(), Some(i));
-        assert_eq!(list.is_index_used(Index::from(i as usize)), false);
+        assert_eq!(list.is_index_used(ListIndex::from(i as usize)), false);
         assert_eq!(list.len(), i as usize);
     });
     assert_eq!(list.remove_first(), None);
@@ -125,7 +125,7 @@ fn test_trim_swap() {
         let mut indexes: Vec<usize> = (0..list.capacity()).collect();
         indexes.shuffle(&mut rng);
         (0..8).for_each(|_| {
-            list.remove(Index::from(indexes.pop()));
+            list.remove(ListIndex::from(indexes.pop()));
         });
         debug_print_indexes(&list);
         list.trim_swap();
@@ -174,14 +174,14 @@ fn insert_remove_variants() {
                     indexes.push(get_raw_index(&ndx));
                 },
                 1 => {
-                    let that = Index::from(indexes[rng.gen_range(0..c)] - 1);
+                    let that = ListIndex::from(indexes[rng.gen_range(0..c)] - 1);
                     print!("before {} ", that);
                     let ndx = list.insert_before(that, num);
                     println!("index {}", ndx);
                     indexes.push(get_raw_index(&ndx));
                 },
                 2 => {
-                    let that = Index::from(indexes[rng.gen_range(0..c)] - 1);
+                    let that = ListIndex::from(indexes[rng.gen_range(0..c)] - 1);
                     print!("after {} ", that);
                     let ndx = list.insert_after(that, num);
                     println!("index {} ", ndx);
@@ -198,7 +198,7 @@ fn insert_remove_variants() {
         }
         assert_eq!(list.len(), count);
         for c in (1..=count).rev() {
-            let ndx = Index::from(
+            let ndx = ListIndex::from(
                 indexes.swap_remove(rng.gen_range(0..c as usize)) - 1);
             println!("IndexList - remove {}", ndx);
             let num = list.remove(ndx).unwrap();

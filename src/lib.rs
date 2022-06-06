@@ -10,164 +10,26 @@
 //!
 #![forbid(unsafe_code)]
 
-use std::cmp::Ordering;
-use std::convert::TryFrom;
-use std::default::Default;
-use std::fmt;
-use std::iter::DoubleEndedIterator;
-use std::iter::{Extend, FromIterator, FusedIterator};
-use std::mem;
-use std::num::NonZeroU32;
+pub mod listdrainiter;
+pub mod listindex;
+pub mod listiter;
+mod listnode;
+mod listends;
 
-/// Vector index for the elements in the list. They are typically not
-/// squential.
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub struct Index {
-    ndx: Option<NonZeroU32>
-}
-
-impl Index {
-    #[inline]
-    pub fn new() -> Index {
-        Default::default()
-    }
-    #[inline]
-    /// Returns `true` for a valid index.
-    ///
-    /// A valid index can be used in IndexList method calls.
-    pub fn is_some(&self) -> bool {
-        self.ndx.is_some()
-    }
-    #[inline]
-    /// Returns `true` for an invalid index.
-    ///
-    /// An invalid index will always be ignored and have `None` returned from
-    /// any IndexList method call that returns something.
-    pub fn is_none(&self) -> bool {
-        self.ndx.is_none()
-    }
-    #[inline]
-    fn get(&self) -> Option<usize> {
-        Some(self.ndx?.get() as usize - 1)
-    }
-    #[inline]
-    fn set(mut self, index: Option<usize>) -> Self {
-        if let Some(n) = index {
-            self.ndx = NonZeroU32::try_from(n as u32 + 1).ok()
-        }
-        self
-    }
-}
-
-impl From<u32> for Index {
-    fn from(index: u32) -> Index {
-        Index::new().set(Some(index as usize))
-    }
-}
-
-impl From<u64> for Index {
-    fn from(index: u64) -> Index {
-        Index::new().set(Some(index as usize))
-    }
-}
-
-impl From<usize> for Index {
-    fn from(index: usize) -> Index {
-        Index::new().set(Some(index))
-    }
-}
-
-impl From<Option<usize>> for Index {
-    fn from(index: Option<usize>) -> Index {
-        Index::new().set(index)
-    }
-}
-
-impl fmt::Display for Index {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if let Some(ndx) = self.ndx {
-            write!(f, "{}", ndx)
-        } else {
-            write!(f, "|")
-        }
-    }
-}
-
-#[derive(Clone, Debug, Default)]
-struct IndexNode {
-    next: Index,
-    prev: Index,
-}
-
-impl IndexNode {
-    #[inline]
-    fn new() -> IndexNode {
-        Default::default()
-    }
-    #[inline]
-    fn new_next(&mut self, next: Index) -> Index {
-        mem::replace(&mut self.next, next)
-    }
-    #[inline]
-    fn new_prev(&mut self, prev: Index) -> Index {
-        mem::replace(&mut self.prev, prev)
-    }
-}
-
-impl fmt::Display for IndexNode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}<>{}", self.next, self.prev)
-    }
-}
-
-#[derive(Clone, Debug, Default)]
-struct IndexEnds {
-    head: Index,
-    tail: Index,
-}
-
-impl IndexEnds {
-    #[allow(dead_code)]
-    #[inline]
-    fn new() -> Self {
-        Default::default()
-    }
-    #[inline]
-    fn clear(&mut self) {
-        self.new_both(Index::new());
-    }
-    #[inline]
-    fn is_empty(&self) -> bool {
-        self.head.is_none()
-    }
-    #[inline]
-    fn new_head(&mut self, head: Index) -> Index {
-        mem::replace(&mut self.head, head)
-    }
-    #[inline]
-    fn new_tail(&mut self, tail: Index) -> Index {
-        mem::replace(&mut self.tail, tail)
-    }
-    #[inline]
-    fn new_both(&mut self, both: Index) {
-        self.head = both;
-        self.tail = both;
-    }
-}
-
-impl fmt::Display for IndexEnds {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}>=<{}", self.head, self.tail)
-    }
-}
+use std::{cmp::Ordering, default::Default, fmt};
+use std::iter::{Extend, FromIterator};
+use crate::{listnode::ListNode, listends::ListEnds};
+pub use crate::listindex::ListIndex as ListIndex;
+pub use crate::listiter::ListIter as ListIter;
+pub use crate::listdrainiter::ListDrainIter as ListDrainIter;
 
 /// Doubly-linked list implemented in safe Rust.
 #[derive(Debug)]
 pub struct IndexList<T> {
     elems: Vec<Option<T>>,
-    nodes: Vec<IndexNode>,
-    used: IndexEnds,
-    free: IndexEnds,
+    nodes: Vec<ListNode>,
+    used: ListEnds,
+    free: ListEnds,
     size: usize,
 }
 
@@ -176,8 +38,8 @@ impl<T> Default for IndexList<T> {
         IndexList::<T> {
             elems: Vec::new(),
             nodes: Vec::new(),
-            used: IndexEnds::new(),
-            free: IndexEnds::new(),
+            used: ListEnds::new(),
+            free: ListEnds::new(),
             size: 0,
         }
     }
@@ -259,7 +121,7 @@ impl<T> IndexList<T> {
     }
     /// Returns `true` if the index is valid.
     #[inline]
-    pub fn is_index_used(&self, index: Index) -> bool {
+    pub fn is_index_used(&self, index: ListIndex) -> bool {
         self.get(index).is_some()
     }
     /// Returns the index of the first element, or `None` if the list is empty.
@@ -271,7 +133,7 @@ impl<T> IndexList<T> {
     /// let index = list.first_index();
     /// ```
     #[inline]
-    pub fn first_index(&self) -> Index {
+    pub fn first_index(&self) -> ListIndex {
         self.used.head
     }
     /// Returns the index of the last element, or `None` if the list is empty.
@@ -283,7 +145,7 @@ impl<T> IndexList<T> {
     /// let index = list.last_index();
     /// ```
     #[inline]
-    pub fn last_index(&self) -> Index {
+    pub fn last_index(&self) -> ListIndex {
         self.used.tail
     }
     /// Returns the index of the next element, after index, or `None` when the
@@ -304,12 +166,12 @@ impl<T> IndexList<T> {
     /// }
     /// ```
     #[inline]
-    pub fn next_index(&self, index: Index) -> Index {
+    pub fn next_index(&self, index: ListIndex) -> ListIndex {
         if let Some(ndx) = index.get() {
             if let Some(node) = self.nodes.get(ndx) {
                 node.next
             } else {
-                Index::new()
+                ListIndex::new()
             }
         } else {
             self.first_index()
@@ -333,12 +195,12 @@ impl<T> IndexList<T> {
     /// }
     /// ```
     #[inline]
-    pub fn prev_index(&self, index: Index) -> Index {
+    pub fn prev_index(&self, index: ListIndex) -> ListIndex {
         if let Some(ndx) = index.get() {
             if let Some(node) = self.nodes.get(ndx) {
                 node.prev
             } else {
-                Index::new()
+                ListIndex::new()
             }
         } else {
             self.last_index()
@@ -367,7 +229,7 @@ impl<T> IndexList<T> {
     /// assert!(index.is_none());
     /// ```
     #[inline]
-    pub fn move_index(&self, index: Index, steps: i32) -> Index {
+    pub fn move_index(&self, index: ListIndex, steps: i32) -> ListIndex {
         let mut index = index;
         match steps.cmp(&0) {
             Ordering::Greater => {
@@ -418,7 +280,7 @@ impl<T> IndexList<T> {
     /// let data = list.get(index);
     /// ```
     #[inline]
-    pub fn get(&self, index: Index) -> Option<&T> {
+    pub fn get(&self, index: ListIndex) -> Option<&T> {
         let ndx = index.get().unwrap_or(usize::MAX);
         self.elems.get(ndx)?.as_ref()
     }
@@ -471,7 +333,7 @@ impl<T> IndexList<T> {
     /// # assert_eq!(list.get_last(), Some(&1u64));
     /// ```
     #[inline]
-    pub fn get_mut(&mut self, index: Index) -> Option<&mut T> {
+    pub fn get_mut(&mut self, index: ListIndex) -> Option<&mut T> {
         if let Some(ndx) = index.get() {
             if ndx < self.capacity() {
                 return self.elems[ndx].as_mut();
@@ -494,7 +356,7 @@ impl<T> IndexList<T> {
     /// # assert_eq!(list.get_last(), Some(&1u64));
     /// ```
     #[inline]
-    pub fn swap_index(&mut self, this: Index, that: Index) {
+    pub fn swap_index(&mut self, this: ListIndex, that: ListIndex) {
         if let Some(here) = this.get() {
             if let Some(there) = that.get() {
                 self.swap_data(here, there);
@@ -516,7 +378,7 @@ impl<T> IndexList<T> {
     /// }
     /// ```
     #[inline]
-    pub fn peek_next(&self, index: Index) -> Option<&T> {
+    pub fn peek_next(&self, index: ListIndex) -> Option<&T> {
         self.get(self.next_index(index))
     }
     /// Peek at previous element data, before the index, if any.
@@ -534,7 +396,7 @@ impl<T> IndexList<T> {
     /// }
     /// ```
     #[inline]
-    pub fn peek_prev(&self, index: Index) -> Option<&T> {
+    pub fn peek_prev(&self, index: ListIndex) -> Option<&T> {
         self.get(self.prev_index(index))
     }
     /// Returns `true` if the element is in the list.
@@ -564,17 +426,17 @@ impl<T> IndexList<T> {
     ///
     /// Example:
     /// ```rust
-    /// # use index_list::{Index, IndexList};
+    /// # use index_list::{ListIndex, IndexList};
     /// # let mut list = IndexList::from(&mut vec![1, 2, 3]);
     /// let index = list.index_of(2);
-    /// # assert_eq!(index, Index::from(1u32))
+    /// # assert_eq!(index, ListIndex::from(1u32))
     /// ```
     #[inline]
-    pub fn index_of(&self, elem: T) -> Index
+    pub fn index_of(&self, elem: T) -> ListIndex
     where
         T: PartialEq,
     {
-        Index::from(self.elems.iter().position(|e| {
+        ListIndex::from(self.elems.iter().position(|e| {
             if let Some(data) = e {
                 data == &elem
             } else {
@@ -593,7 +455,7 @@ impl<T> IndexList<T> {
     /// # let mut list = IndexList::<u64>::new();
     /// let index = list.insert_first(42);
     /// ```
-    pub fn insert_first(&mut self, elem: T) -> Index {
+    pub fn insert_first(&mut self, elem: T) -> ListIndex {
         let this = self.new_node(Some(elem));
         self.linkin_first(this);
         this
@@ -609,7 +471,7 @@ impl<T> IndexList<T> {
     /// # let mut list = IndexList::<u64>::new();
     /// let index = list.insert_last(42);
     /// ```
-    pub fn insert_last(&mut self, elem: T) -> Index {
+    pub fn insert_last(&mut self, elem: T) -> ListIndex {
         let this = self.new_node(Some(elem));
         self.linkin_last(this);
         this
@@ -625,7 +487,7 @@ impl<T> IndexList<T> {
     /// # let mut index = list.last_index();
     /// index = list.insert_before(index, 42);
     /// ```
-    pub fn insert_before(&mut self, index: Index, elem: T) -> Index {
+    pub fn insert_before(&mut self, index: ListIndex, elem: T) -> ListIndex {
         if index.is_none() {
             return self.insert_first(elem);
         }
@@ -644,7 +506,7 @@ impl<T> IndexList<T> {
     /// # let mut index = list.first_index();
     /// index = list.insert_after(index, 42);
     /// ```
-    pub fn insert_after(&mut self, index: Index, elem: T) -> Index {
+    pub fn insert_after(&mut self, index: ListIndex, elem: T) -> ListIndex {
         if index.is_none() {
             return self.insert_last(elem);
         }
@@ -689,7 +551,7 @@ impl<T> IndexList<T> {
     /// let data = list.remove(index);
     /// # assert_eq!(data, Some("B"));
     /// ```
-    pub fn remove(&mut self, index: Index) -> Option<T> {
+    pub fn remove(&mut self, index: ListIndex) -> Option<T> {
         let elem_opt = self.remove_elem_at_index(index);
         if elem_opt.is_some() {
             self.linkout_used(index);
@@ -707,8 +569,8 @@ impl<T> IndexList<T> {
     /// assert_eq!(total, 720);
     /// ```
     #[inline]
-    pub fn iter(&self) -> Iter<T> {
-        Iter {
+    pub fn iter(&self) -> ListIter<T> {
+        ListIter {
             list: self,
             next: self.first_index(),
             prev: self.last_index(),
@@ -727,8 +589,8 @@ impl<T> IndexList<T> {
     /// assert_eq!(items, vec!["A", "B", "C"]);
     /// ```
     #[inline]
-    pub fn drain_iter(&mut self) -> DrainIter<T> {
-        DrainIter(self)
+    pub fn drain_iter(&mut self) -> ListDrainIter<T> {
+        ListDrainIter::new(self)
     }
     /// Create a vector for all elements.
     ///
@@ -782,7 +644,7 @@ impl<T> IndexList<T> {
             .take_while(|&i| self.is_free(i))
             .collect();
         removed.iter().for_each(|&i| {
-            self.linkout_free(Index::from(i));
+            self.linkout_free(ListIndex::from(i));
         });
         if !removed.is_empty() {
             let left = self.capacity() - removed.len();
@@ -830,7 +692,7 @@ impl<T> IndexList<T> {
         src.iter()
             .zip(dst.iter())
             .for_each(|(s, d)| self.replace_dest_with_source(*s, *d));
-        self.free.new_both(Index::new());
+        self.free.new_both(ListIndex::new());
         self.elems.truncate(need);
         self.nodes.truncate(need);
     }
@@ -896,7 +758,7 @@ impl<T> IndexList<T> {
     /// # assert_eq!(list.to_string(), "[4 >< 8 >< 15]");
     /// # assert_eq!(other.to_string(), "[16 >< 23 >< 42]");
     /// ```
-    pub fn split(&mut self, index: Index) -> IndexList<T> {
+    pub fn split(&mut self, index: ListIndex) -> IndexList<T> {
         let mut list = IndexList::<T>::new();
         while self.is_index_used(index) {
             list.insert_first(self.remove_last().unwrap());
@@ -912,11 +774,11 @@ impl<T> IndexList<T> {
         self.elems[at].is_none()
     }
     #[inline]
-    fn get_mut_indexnode(&mut self, at: usize) -> &mut IndexNode {
+    fn get_mut_indexnode(&mut self, at: usize) -> &mut ListNode {
         &mut self.nodes[at]
     }
     #[inline]
-    fn get_indexnode(&self, at: usize) -> &IndexNode {
+    fn get_indexnode(&self, at: usize) -> &ListNode {
         &self.nodes[at]
     }
     #[inline]
@@ -924,7 +786,7 @@ impl<T> IndexList<T> {
         self.elems.swap(here, there);
     }
     #[inline]
-    fn set_prev(&mut self, index: Index, new_prev: Index) -> Index {
+    fn set_prev(&mut self, index: ListIndex, new_prev: ListIndex) -> ListIndex {
         if let Some(at) = index.get() {
             self.get_mut_indexnode(at).new_prev(new_prev)
         } else {
@@ -932,7 +794,7 @@ impl<T> IndexList<T> {
         }
     }
     #[inline]
-    fn set_next(&mut self, index: Index, new_next: Index) -> Index {
+    fn set_next(&mut self, index: ListIndex, new_next: ListIndex) -> ListIndex {
         if let Some(at) = index.get() {
             self.get_mut_indexnode(at).new_next(new_next)
         } else {
@@ -940,35 +802,35 @@ impl<T> IndexList<T> {
         }
     }
     #[inline]
-    fn linkin_tail(&mut self, prev: Index, this: Index, next: Index) {
+    fn linkin_tail(&mut self, prev: ListIndex, this: ListIndex, next: ListIndex) {
         if next.is_none() {
             let old_tail = self.used.new_tail(this);
             debug_assert_eq!(old_tail, prev);
         }
     }
     #[inline]
-    fn linkin_head(&mut self, prev: Index, this: Index, next: Index) {
+    fn linkin_head(&mut self, prev: ListIndex, this: ListIndex, next: ListIndex) {
         if prev.is_none() {
             let old_head = self.used.new_head(this);
             debug_assert_eq!(old_head, next);
         }
     }
     #[inline]
-    fn insert_elem_at_index(&mut self, this: Index, elem: Option<T>) {
+    fn insert_elem_at_index(&mut self, this: ListIndex, elem: Option<T>) {
         if let Some(at) = this.get() {
             self.elems[at] = elem;
             self.size += 1;
         }
     }
     #[inline]
-    fn remove_elem_at_index(&mut self, this: Index) -> Option<T> {
+    fn remove_elem_at_index(&mut self, this: ListIndex) -> Option<T> {
         this.get()
             .and_then(|at| {
                 self.size -= 1;
                 self.elems[at].take()
             })
     }
-    fn new_node(&mut self, elem: Option<T>) -> Index {
+    fn new_node(&mut self, elem: Option<T>) -> ListIndex {
         let reuse = self.free.head;
         if reuse.is_some() {
             self.insert_elem_at_index(reuse, elem);
@@ -976,12 +838,12 @@ impl<T> IndexList<T> {
             return reuse;
         }
         let pos = self.nodes.len();
-        self.nodes.push(IndexNode::new());
+        self.nodes.push(ListNode::new());
         self.elems.push(elem);
         self.size += 1;
-        Index::from(pos)
+        ListIndex::from(pos)
     }
-    fn linkin_free(&mut self, this: Index) {
+    fn linkin_free(&mut self, this: ListIndex) {
         debug_assert!(!self.is_index_used(this));
         let prev = self.free.tail;
         self.set_next(prev, this);
@@ -993,7 +855,7 @@ impl<T> IndexList<T> {
             debug_assert_eq!(old_tail, prev);
         }
     }
-    fn linkin_first(&mut self, this: Index) {
+    fn linkin_first(&mut self, this: ListIndex) {
         debug_assert!(self.is_index_used(this));
         let next = self.used.head;
         self.set_prev(next, this);
@@ -1005,7 +867,7 @@ impl<T> IndexList<T> {
             debug_assert_eq!(old_head, next);
         }
     }
-    fn linkin_last(&mut self, this: Index) {
+    fn linkin_last(&mut self, this: ListIndex) {
         debug_assert!(self.is_index_used(this));
         let prev = self.used.tail;
         self.set_next(prev, this);
@@ -1018,7 +880,7 @@ impl<T> IndexList<T> {
         }
     }
     // prev? >< that => prev? >< this >< that
-    fn linkin_this_before_that(&mut self, this: Index, that: Index) {
+    fn linkin_this_before_that(&mut self, this: ListIndex, that: ListIndex) {
         debug_assert!(self.is_index_used(this));
         debug_assert!(self.is_index_used(that));
         let prev = self.set_prev(that, this);
@@ -1031,7 +893,7 @@ impl<T> IndexList<T> {
         self.linkin_head(prev, this, that);
     }
     // that >< next? => that >< this >< next?
-    fn linkin_this_after_that(&mut self, this: Index, that: Index) {
+    fn linkin_this_after_that(&mut self, this: ListIndex, that: ListIndex) {
         debug_assert!(self.is_index_used(this));
         debug_assert!(self.is_index_used(that));
         let next = self.set_next(that, this);
@@ -1044,9 +906,9 @@ impl<T> IndexList<T> {
         self.linkin_tail(that, this, next);
     }
     // prev >< this >< next => prev >< next
-    fn linkout_node(&mut self, this: Index) -> (Index, Index) {
-        let next = self.set_next(this, Index::new());
-        let prev = self.set_prev(this, Index::new());
+    fn linkout_node(&mut self, this: ListIndex) -> (ListIndex, ListIndex) {
+        let next = self.set_next(this, ListIndex::new());
+        let prev = self.set_prev(this, ListIndex::new());
         let old_prev = self.set_prev(next, prev);
         if old_prev.is_some() {
             debug_assert_eq!(old_prev, this);
@@ -1057,7 +919,7 @@ impl<T> IndexList<T> {
         }
         (prev, next)
     }
-    fn linkout_used(&mut self, this: Index) {
+    fn linkout_used(&mut self, this: ListIndex) {
         let (prev, next) = self.linkout_node(this);
         if next.is_none() {
             let old_tail = self.used.new_tail(prev);
@@ -1068,7 +930,7 @@ impl<T> IndexList<T> {
             debug_assert_eq!(old_head, this);
         }
     }
-    fn linkout_free(&mut self, this: Index) {
+    fn linkout_free(&mut self, this: ListIndex) {
         let (prev, next) = self.linkout_node(this);
         if next.is_none() {
             let old_tail = self.free.new_tail(prev);
@@ -1082,13 +944,13 @@ impl<T> IndexList<T> {
     fn replace_dest_with_source(&mut self, src: usize, dst: usize) {
         debug_assert!(self.is_free(dst));
         debug_assert!(self.is_used(src));
-        self.linkout_free(Index::from(dst));
+        self.linkout_free(ListIndex::from(dst));
         let src_node = self.get_indexnode(src);
         let next = src_node.next;
         let prev = src_node.prev;
-        self.linkout_used(Index::from(src));
+        self.linkout_used(ListIndex::from(src));
         self.elems[dst] = self.elems[src].take();
-        let this = Index::from(dst);
+        let this = ListIndex::from(dst);
         if next.is_some() {
             self.linkin_this_before_that(this, next);
         } else if prev.is_some() {
@@ -1135,66 +997,6 @@ impl<T> Extend<T> for IndexList<T> {
     }
 }
 
-/// A double-ended iterator over all the elements in the list. It is fused and
-/// can be reversed.
-pub struct Iter<'a, T> {
-    list: &'a IndexList<T>,
-    next: Index,
-    prev: Index,
-}
-
-impl<'a, T> Iterator for Iter<'a, T> {
-    type Item = &'a T;
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        let item = self.list.get(self.next);
-        self.next = self.list.next_index(self.next);
-        item
-    }
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let my_len = self.list.len();
-        (my_len, Some(my_len))
-    }
-}
-impl<T> FusedIterator for Iter<'_, T> {}
-
-impl<'a, T> DoubleEndedIterator for Iter<'a, T> {
-    fn next_back(&mut self) -> Option<Self::Item> {
-        let item = self.list.get(self.prev);
-        self.prev = self.list.prev_index(self.prev);
-        item
-    }
-}
-
-/// A consuming interator that will remove elements from the list as it is
-/// iterating over them. The iterator is fused and can also be reversed.
-pub struct DrainIter<'a, T>(&'a mut IndexList<T>);
-
-impl<'a, T> Iterator for DrainIter<'a, T> {
-    type Item = T;
-    fn next(&mut self) -> Option<Self::Item> {
-        self.0.remove_first()
-    }
-}
-
-impl<'a, T> DoubleEndedIterator for DrainIter<'a, T> {
-    fn next_back(&mut self) -> Option<Self::Item> {
-        self.0.remove_last()
-    }
-}
-
-impl<T> FusedIterator for DrainIter<'_, T> {}
-
-impl<'a, T> IntoIterator for &'a IndexList<T> {
-    type Item = &'a T;
-    type IntoIter = Iter<'a, T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.iter()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1202,9 +1004,9 @@ mod tests {
 
     #[test]
     fn test_struct_sizes() {
-        assert_eq!(size_of::<Index>(), 4);
-        assert_eq!(size_of::<IndexNode>(), 8);
-        assert_eq!(size_of::<IndexEnds>(), 8);
+        assert_eq!(size_of::<ListIndex>(), 4);
+        assert_eq!(size_of::<ListNode>(), 8);
+        assert_eq!(size_of::<ListEnds>(), 8);
         assert_eq!(size_of::<IndexList<u32>>(), 72);
     }
 }
