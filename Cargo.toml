@@ -1,18 +1,22 @@
 [package]
 name = "index_list"
-version = "0.2.7"
+version = "0.2.8"
 description = "A doubly linked list implemented in safe Rust using vector indexes"
 authors = ["Stefan Lindblad <stefan.lindblad@linux.com>"]
-edition = "2018"
-license = "LGPL-2.1-or-later"
+edition = "2021"
+license = "MPL-2.0"
 repository = "https://github.com/Fairglow/index-list.git"
 readme = "README.md"
 
 [dev-dependencies]
-criterion = "0.3.4"
-rand = "0.8.3"
+criterion = "0.4"
+rand = "0.8"
 
 [[bench]]
 name = "indexlist-benchmark"
 path = "benches/benchmark.rs"
 harness = false
+
+[profile.release]
+codegen-units = 1
+lto = true
