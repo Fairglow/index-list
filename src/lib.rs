@@ -564,6 +564,16 @@ impl<T> IndexList<T> {
         }
         elem_opt
     }
+    /// Move the element at the index to the end.
+    /// The index remains the same.
+    pub fn move_to_last(&mut self, index: ListIndex) {
+        if self.is_index_used(index) {
+            // unlink where it is
+            self.linkout_used(index);
+            // insert it as last
+            self.linkin_last(index);
+        }
+    }
     /// Create a new iterator over all the elements.
     ///
     /// Example:

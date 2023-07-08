@@ -60,6 +60,7 @@ fn test_instantiate() {
     list.split(null);
     list.trim_safe();
     list.trim_swap();
+    list.move_to_last(ListIndex::new())
 }
 #[test]
 fn basic_insert_remove() {
