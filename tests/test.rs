@@ -164,7 +164,7 @@ fn test_single_element() {
 fn insert_remove_variants() {
     let count = 256;
     let mut rng = rand::thread_rng();
-    let mut list = IndexList::<u64>::new();
+    let mut list = IndexList::<u64>::with_capacity(count);
     let mut numbers: HashSet<u64> = HashSet::with_capacity(count);
     let mut indexes: Vec<u32> = Vec::with_capacity(count);
     for _ in 0..8 {

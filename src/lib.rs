@@ -64,6 +64,23 @@ impl<T> IndexList<T> {
     pub fn new() -> Self {
         Default::default()
     }
+    /// Creates an empty `IndexList` with at least the specified capacity.
+    ///
+    /// Example:
+    /// ```rust
+    /// use index_list::IndexList;
+    /// let list = IndexList::<u64>::with_capacity(233);
+    /// ```
+    #[inline]
+    pub fn with_capacity(capacity: usize) -> Self {
+        IndexList {
+            elems: Vec::with_capacity(capacity),
+            nodes: Vec::with_capacity(capacity),
+            used: ListEnds::new(),
+            free: ListEnds::new(),
+            size: 0,
+        }
+    }
     /// Returns the current capacity of the list.
     ///
     /// This value is always greater than or equal to the length.
