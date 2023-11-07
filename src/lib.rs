@@ -27,6 +27,7 @@ use crate::{listnode::ListNode, listends::ListEnds};
 pub use crate::listindex::ListIndex as ListIndex;
 pub use crate::listiter::ListIter as ListIter;
 pub use crate::listdrainiter::ListDrainIter as ListDrainIter;
+pub type Index = ListIndex; // for backwards compatibility with 0.2.7
 
 /// Doubly-linked list implemented in safe Rust.
 #[derive(Debug)]
@@ -1030,5 +1031,12 @@ mod tests {
         assert_eq!(size_of::<ListNode>(), 8);
         assert_eq!(size_of::<ListEnds>(), 8);
         assert_eq!(size_of::<IndexList<u32>>(), 72);
+    }
+    #[test]
+    fn test_index_alias() {
+        let list = IndexList::from(&mut vec![1, 2, 3]);
+        let ndx: Index = list.first_index();
+        assert_eq!(ndx.get(), Some(0));
+        assert_eq!(list.get(ndx), Some(&1));
     }
 }
