@@ -1,3 +1,5 @@
+[![Rust](https://github.com/Fairglow/index-list/actions/workflows/rust.yml/badge.svg)](https://github.com/Fairglow/index-list/actions/workflows/rust.yml)
+
 # Index List
 
 An index list is a hybrid between a vector and a linked-list, with some of the properties of each. Every element has an index in the vector and can be accessed directly there. This index is persistent as long as the element remains in the list and is not affected by other elements of the list. An index does not change if the element is moved in the list, nor when other elements are inserted or removed from the list.
