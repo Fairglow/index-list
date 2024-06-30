@@ -269,6 +269,113 @@ impl<T> IndexList<T> {
         }
         index
     }
+    /// Make the index `this` (and associated element) come before the index `that` (and associated element).
+    ///
+    /// Returns `true` if the operation was successful. This will fail if either index is invalid or if `this` and `that`
+    /// are the same index.
+    ///
+    /// This is similar to calling `let elem = self.remove(this);` followed by `self.insert_before(that, elem)`
+    /// except that it doesn't invalildate or change the index `this`. That is, the index `this` is guaranteed
+    /// to still point to the same element `elem` after this operation completes.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// let mut list = IndexList::from(&mut vec![1, 2, 3]);
+    /// let index = list.first_index();
+    /// let moved = list.shift_index_before(index, list.last_index());
+    /// assert!(moved);
+    /// assert_eq!(list.get(index), Some(&1));
+    /// assert_eq!(list.to_string(), "[2 >< 1 >< 3]");
+    /// ```
+    pub fn shift_index_before(&mut self, this: ListIndex, that: ListIndex) -> bool {
+        let valid = self.is_index_used(this) && self.is_index_used(that) && this != that;
+        if valid {
+            self.linkout_used(this);
+            self.linkin_this_before_that(this, that)
+        }
+        valid
+    }
+    /// Make the index `this` (and associated element) come after the index `that` (and associated element).
+    ///
+    /// Returns `true` if the operation was successful. This will fail if either index is invalid or if `this` and `that`
+    /// are the same index.
+    ///
+    /// This is similar to calling `let elem = self.remove(this);` followed by `self.insert_after(that, elem)`
+    /// except that it doesn't invalildate or change the index `this`. That is, the index `this` is guaranteed
+    /// to still point to the same element `elem` after this operation completes.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// let mut list = IndexList::from(&mut vec![1, 2, 3]);
+    /// let index = list.first_index();
+    /// let next_index = list.next_index(index);
+    /// let moved = list.shift_index_after(index, next_index);
+    /// assert!(moved);
+    /// assert_eq!(list.get(index), Some(&1));
+    /// assert_eq!(list.to_string(), "[2 >< 1 >< 3]");
+    /// ```
+    pub fn shift_index_after(&mut self, this: ListIndex, that: ListIndex) -> bool {
+        let valid = self.is_index_used(this) && self.is_index_used(that) && this != that;
+        if valid {
+            self.linkout_used(this);
+            self.linkin_this_after_that(this, that)
+        }
+        valid
+    }
+    /// Make the index `this` (and associated element) come first in the list.
+    ///
+    /// Returns `true` if the operation was successful. This will fail if `this` is an invalid index.
+    ///
+    /// This is similar to calling `let elem = self.remove(this);` followed by `self.insert_first(elem)`
+    /// except that it doesn't invalildate or change the index `this`. That is, the index `this` is guaranteed
+    /// to still point to the same element `elem` after this operation completes.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// let mut list = IndexList::from(&mut vec![1, 2, 3]);
+    /// let index = list.last_index();
+    /// let moved = list.shift_index_to_front(index);
+    /// assert!(moved);
+    /// assert_eq!(list.get(index), Some(&3));
+    /// assert_eq!(list.to_string(), "[3 >< 1 >< 2]");
+    /// ```
+    pub fn shift_index_to_front(&mut self, this: ListIndex) -> bool {
+        let valid = self.is_index_used(this);
+        if valid {
+            self.linkout_used(this);
+            self.linkin_first(this);
+        }
+        valid
+    }
+    /// Make the index `this` (and associated element) come last in the list.
+    ///
+    /// Returns `true` if the operation was successful. This will fail if `this` is an invalid index.
+    ///
+    /// This is similar to calling `let elem = self.remove(this);` followed by `self.insert_last(elem)`
+    /// except that it doesn't invalildate or change the index `this`. That is, the index `this` is guaranteed
+    /// to still point to the same element `elem` after this operation completes.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// let mut list = IndexList::from(&mut vec![1, 2, 3]);
+    /// let index = list.first_index();
+    /// let moved = list.shift_index_to_back(index);
+    /// assert!(moved);
+    /// assert_eq!(list.get(index), Some(&1));
+    /// assert_eq!(list.to_string(), "[2 >< 3 >< 1]");
+    /// ```
+    pub fn shift_index_to_back(&mut self, this: ListIndex) -> bool {
+        let valid = self.is_index_used(this);
+        if valid {
+            self.linkout_used(this);
+            self.linkin_last(this);
+        }
+        valid
+    }
     /// Get a reference to the first element data, or `None`.
     ///
     /// Example:
