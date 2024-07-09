@@ -161,6 +161,16 @@ fn test_single_element() {
     assert_eq!(list.len(), 0);
 }
 #[test]
+fn test_remove_element_twice() {
+    let mut list = IndexList::<u64>::new();
+    let index = list.insert_first(0);
+    let removed1 = list.remove(index);
+    assert_eq!(removed1, Some(0));
+    let removed2 = list.remove(index);
+    assert_eq!(removed2, None);
+    assert_eq!(list.len(), 0);
+}
+#[test]
 fn insert_remove_variants() {
     let count = 256;
     let mut rng = rand::thread_rng();
