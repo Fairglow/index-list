@@ -954,11 +954,10 @@ impl<T> IndexList<T> {
     }
     #[inline]
     fn remove_elem_at_index(&mut self, this: ListIndex) -> Option<T> {
-        this.get()
-            .and_then(|at| {
-                self.size -= 1;
-                self.elems[at].take()
-            })
+        let at = this.get()?;
+        let removed = self.elems[at].take()?;
+        self.size -= 1;
+        Some(removed)
     }
     fn new_node(&mut self, elem: Option<T>) -> ListIndex {
         let reuse = self.free.head;
