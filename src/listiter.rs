@@ -31,7 +31,7 @@ impl<'a, T> Iterator for ListIter<'a, T> {
 }
 impl<T> FusedIterator for ListIter<'_, T> {}
 
-impl<'a, T> DoubleEndedIterator for ListIter<'a, T> {
+impl<T> DoubleEndedIterator for ListIter<'_, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
         let item = self.list.get(self.prev);
         self.prev = self.list.prev_index(self.prev);

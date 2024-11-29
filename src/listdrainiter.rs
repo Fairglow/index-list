@@ -17,14 +17,14 @@ impl<'a, T> ListDrainIter<'a, T> {
     }
 }
 
-impl<'a, T> Iterator for ListDrainIter<'a, T> {
+impl<T> Iterator for ListDrainIter<'_, T> {
     type Item = T;
     fn next(&mut self) -> Option<Self::Item> {
         self.0.remove_first()
     }
 }
 
-impl<'a, T> DoubleEndedIterator for ListDrainIter<'a, T> {
+impl<T> DoubleEndedIterator for ListDrainIter<'_, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.remove_last()
     }
