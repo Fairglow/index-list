@@ -4,7 +4,7 @@ use std::{convert::TryFrom, default::Default, fmt, num::NonZeroU32};
 
 /// Vector index for the elements in the list. They are typically not
 /// squential.
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Hash)]
 pub struct ListIndex {
     ndx: Option<NonZeroU32>
 }
