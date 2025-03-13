@@ -45,6 +45,7 @@ impl<'a, T> Iterator for ListIter<'a, T> {
     }
 }
 impl<T> FusedIterator for ListIter<'_, T> {}
+impl<T> ExactSizeIterator for ListIter<'_, T> {}
 
 impl<T> DoubleEndedIterator for ListIter<'_, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
