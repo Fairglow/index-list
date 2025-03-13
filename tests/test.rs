@@ -172,6 +172,24 @@ fn test_remove_element_twice() {
     assert_eq!(list.len(), 0);
 }
 #[test]
+fn singleton_element_occurs_on_front_xor_back() {
+    let list = IndexList::<u64>::from_iter([1]);
+    let mut iter = list.iter();
+    assert_eq!(iter.next(), Some(&1));
+    assert_eq!(iter.next_back(), None);
+    let mut iter = list.iter();
+    assert_eq!(iter.next_back(), Some(&1));
+    assert_eq!(iter.next(), None);
+}
+#[test]
+fn test_iterator_hint_correct_after_next() {
+    let list = IndexList::<u64>::from_iter([1, 2, 3]);
+    let mut iter = list.iter();
+    assert_eq!(iter.size_hint(), (3, Some(3)));
+    assert_eq!(iter.next(), Some(&1));
+    assert_eq!(iter.size_hint(), (2, Some(2)));
+}
+#[test]
 fn insert_remove_variants() {
     let count = 256;
     let mut rng = rand::thread_rng();

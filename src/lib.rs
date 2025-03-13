@@ -704,6 +704,7 @@ impl<T> IndexList<T> {
             list: self,
             start: self.first_index(),
             end: self.last_index(),
+            len: self.len(),
         }
     }
     /// Create a draining iterator over all the elements.
