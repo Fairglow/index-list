@@ -3,10 +3,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use index_list::{IndexList, ListIndex};
-use std::mem::size_of;
 use std::collections::HashSet;
-use rand::{Rng, seq::SliceRandom};
+use std::mem::size_of;
+
+use index_list::{IndexList, ListIndex};
+use rand::{seq::SliceRandom, Rng};
 
 fn debug_print_indexes(list: &IndexList<u64>) {
     let mut index = list.first_index();
@@ -187,34 +188,33 @@ fn insert_remove_variants() {
                     let ndx = list.insert_first(num);
                     println!("index {} first", ndx);
                     indexes.push(get_raw_index(&ndx));
-                },
+                }
                 1 => {
                     let that = ListIndex::from(indexes[rng.gen_range(0..c)] - 1);
                     print!("before {} ", that);
                     let ndx = list.insert_before(that, num);
                     println!("index {}", ndx);
                     indexes.push(get_raw_index(&ndx));
-                },
+                }
                 2 => {
                     let that = ListIndex::from(indexes[rng.gen_range(0..c)] - 1);
                     print!("after {} ", that);
                     let ndx = list.insert_after(that, num);
                     println!("index {} ", ndx);
                     indexes.push(get_raw_index(&ndx));
-                },
+                }
                 _ => {
                     let ndx = list.insert_last(num);
                     println!("index {} last", ndx);
                     indexes.push(get_raw_index(&ndx));
-                },
+                }
             }
             print!("IndexList: ");
             debug_print_indexes(&list);
         }
         assert_eq!(list.len(), count);
         for c in (1..=count).rev() {
-            let ndx = ListIndex::from(
-                indexes.swap_remove(rng.gen_range(0..c as usize)) - 1);
+            let ndx = ListIndex::from(indexes.swap_remove(rng.gen_range(0..c as usize)) - 1);
             println!("IndexList - remove {}", ndx);
             let num = list.remove(ndx).unwrap();
             //println!("IndexList: {}", list.to_debug_string());
