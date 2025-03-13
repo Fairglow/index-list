@@ -190,6 +190,14 @@ fn test_iterator_hint_correct_after_next() {
     assert_eq!(iter.size_hint(), (2, Some(2)));
 }
 #[test]
+fn test_inexhausted_drain_clears_list() {
+    let mut list = IndexList::<u64>::from_iter([1, 2, 3]);
+    let mut drain = list.drain_iter();
+    assert_eq!(drain.next(), Some(1));
+    drop(drain);
+    assert_eq!(list.len(), 0);
+}
+#[test]
 fn insert_remove_variants() {
     let count = 256;
     let mut rng = rand::thread_rng();

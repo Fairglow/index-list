@@ -5,6 +5,7 @@
  */
 //! The definition of the ListDrainIter type
 use std::iter::{DoubleEndedIterator, FusedIterator};
+
 use crate::{listiter::ListIter, IndexList};
 
 /// A consuming interator that will remove elements from the list as it is
@@ -38,5 +39,11 @@ impl<'a, T> IntoIterator for &'a IndexList<T> {
 
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
+    }
+}
+
+impl<T> Drop for ListDrainIter<'_, T> {
+    fn drop(&mut self) {
+        self.0.clear();
     }
 }
