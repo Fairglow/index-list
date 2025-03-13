@@ -33,6 +33,8 @@ impl<T> DoubleEndedIterator for ListDrainIter<'_, T> {
 
 impl<T> FusedIterator for ListDrainIter<'_, T> {}
 
+impl<T> ExactSizeIterator for ListDrainIter<'_, T> {}
+
 impl<'a, T> IntoIterator for &'a IndexList<T> {
     type Item = &'a T;
     type IntoIter = ListIter<'a, T>;
