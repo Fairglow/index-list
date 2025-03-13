@@ -11,16 +11,16 @@ use crate::{listindex::ListIndex, IndexList};
 /// can be reversed.
 pub struct ListIter<'a, T> {
     pub(crate) list: &'a IndexList<T>,
-    pub(crate) next: ListIndex,
-    pub(crate) prev: ListIndex,
+    pub(crate) start: ListIndex,
+    pub(crate) end: ListIndex,
 }
 
 impl<'a, T> Iterator for ListIter<'a, T> {
     type Item = &'a T;
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        let item = self.list.get(self.next);
-        self.next = self.list.next_index(self.next);
+        let item = self.list.get(self.start);
+        self.start = self.list.next_index(self.start);
         item
     }
     #[inline]
@@ -33,8 +33,8 @@ impl<T> FusedIterator for ListIter<'_, T> {}
 
 impl<T> DoubleEndedIterator for ListIter<'_, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        let item = self.list.get(self.prev);
-        self.prev = self.list.prev_index(self.prev);
+        let item = self.list.get(self.end);
+        self.end = self.list.prev_index(self.end);
         item
     }
 }
