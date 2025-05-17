@@ -702,8 +702,9 @@ impl<T> IndexList<T> {
     pub fn iter(&self) -> ListIter<T> {
         ListIter {
             list: self,
-            next: self.first_index(),
-            prev: self.last_index(),
+            start: self.first_index(),
+            end: self.last_index(),
+            len: self.len(),
         }
     }
     /// Create a draining iterator over all the elements.
