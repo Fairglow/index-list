@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-//! The defintions of the ListIterMut type
+//! The definitions of the ListIterMut type
 use std::iter::{DoubleEndedIterator, FusedIterator};
 
 use crate::listindex::ListIndex;
