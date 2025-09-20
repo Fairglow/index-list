@@ -703,7 +703,7 @@ impl<T> IndexList<T> {
     /// assert_eq!(total, 720);
     /// ```
     #[inline]
-    pub fn iter(&self) -> ListIter<T> {
+    pub fn iter(&self) -> ListIter<'_, T> {
         ListIter {
             list: self,
             start: self.first_index(),
@@ -746,7 +746,7 @@ impl<T> IndexList<T> {
     /// assert_eq!(items, vec!["A", "B", "C"]);
     /// ```
     #[inline]
-    pub fn drain_iter(&mut self) -> ListDrainIter<T> {
+    pub fn drain_iter(&mut self) -> ListDrainIter<'_, T> {
         ListDrainIter::new(self)
     }
     /// Create a vector for all elements.

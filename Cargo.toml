@@ -1,6 +1,6 @@
 [package]
 name = "index_list"
-version = "0.2.15"
+version = "0.2.17"
 description = "A doubly linked list implemented in safe Rust using vector indexes"
 keywords = ["linked-list"]
 categories = ["data-structures"]
@@ -11,7 +11,7 @@ repository = "https://github.com/Fairglow/index-list.git"
 readme = "README.md"
 
 [dev-dependencies]
-criterion = "0.5"
+criterion = "0.7"
 rand = "0.8"
 
 [features]
