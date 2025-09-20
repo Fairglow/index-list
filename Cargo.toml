@@ -14,6 +14,10 @@ readme = "README.md"
 criterion = "0.5"
 rand = "0.8"
 
+[features]
+# `iter_mut` is guarded behind a feature flag because the implementation uses unsafety
+iter_mut = []
+
 [[bench]]
 name = "indexlist-benchmark"
 path = "benches/benchmark.rs"

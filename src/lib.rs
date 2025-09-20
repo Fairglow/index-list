@@ -13,11 +13,13 @@
 //! A new IndexList can be created empty with the `new` method, or created from
 //! an existing vector with `IndexList::from`.
 //!
-#![forbid(unsafe_code)]
+#![cfg_attr(not(feature = "iter_mut"), forbid(unsafe_code))]
 
 pub mod listdrainiter;
 pub mod listindex;
 pub mod listiter;
+#[cfg(feature = "iter_mut")]
+pub mod listitermut;
 mod listnode;
 mod listends;
 
@@ -26,6 +28,8 @@ use std::iter::{Extend, FromIterator};
 use crate::{listnode::ListNode, listends::ListEnds};
 pub use crate::listindex::ListIndex as ListIndex;
 pub use crate::listiter::ListIter as ListIter;
+#[cfg(feature = "iter_mut")]
+pub use crate::listitermut::ListIterMut as ListIterMut;
 pub use crate::listdrainiter::ListDrainIter as ListDrainIter;
 pub type Index = ListIndex; // for backwards compatibility with 0.2.7
 
@@ -705,6 +709,28 @@ impl<T> IndexList<T> {
             start: self.first_index(),
             end: self.last_index(),
             len: self.len(),
+        }
+    }
+    /// Create a new mutating iterator over all the elements.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use index_list::IndexList;
+    /// # let mut list = IndexList::from(&mut vec![120, 240, 360]);
+    /// for elem in list.iter_mut() {
+    ///     *elem *= 2;
+    /// }
+    /// assert_eq!(Vec::from_iter(list.drain_iter()), vec![240, 480, 720]);
+    /// ```
+    #[inline]
+    #[cfg(feature = "iter_mut")]
+    pub fn iter_mut(&mut self) -> ListIterMut<T> {
+        ListIterMut {
+            start: self.first_index(),
+            end: self.last_index(),
+            len: self.len(),
+            elems: self.elems.as_mut_ptr(),
+            nodes: &*self.nodes,
         }
     }
     /// Create a draining iterator over all the elements.
