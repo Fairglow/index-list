@@ -1,6 +1,6 @@
 [package]
 name = "index_list"
-version = "0.2.17"
+version = "0.3.0"
 description = "A doubly linked list implemented in safe Rust using vector indexes"
 keywords = ["linked-list"]
 categories = ["data-structures"]
