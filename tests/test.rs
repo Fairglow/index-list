@@ -118,7 +118,7 @@ fn test_append() {
 }
 #[test]
 fn test_trim_swap() {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let mut list = IndexList::<u64>::new();
     for round in 0..16 {
         debug_print_indexes(&list);
@@ -200,7 +200,7 @@ fn test_inexhausted_drain_clears_list() {
 #[test]
 fn insert_remove_variants() {
     let count = 256;
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let mut list = IndexList::<u64>::with_capacity(count);
     let mut numbers: HashSet<u64> = HashSet::with_capacity(count);
     let mut indexes: Vec<u32> = Vec::with_capacity(count);
@@ -216,14 +216,14 @@ fn insert_remove_variants() {
                     indexes.push(get_raw_index(&ndx));
                 }
                 1 => {
-                    let that = ListIndex::from(indexes[rng.gen_range(0..c)] - 1);
+                    let that = ListIndex::from(indexes[rng.random_range(0..c)] - 1);
                     print!("before {} ", that);
                     let ndx = list.insert_before(that, num);
                     println!("index {}", ndx);
                     indexes.push(get_raw_index(&ndx));
                 }
                 2 => {
-                    let that = ListIndex::from(indexes[rng.gen_range(0..c)] - 1);
+                    let that = ListIndex::from(indexes[rng.random_range(0..c)] - 1);
                     print!("after {} ", that);
                     let ndx = list.insert_after(that, num);
                     println!("index {} ", ndx);
@@ -240,7 +240,7 @@ fn insert_remove_variants() {
         }
         assert_eq!(list.len(), count);
         for c in (1..=count).rev() {
-            let ndx = ListIndex::from(indexes.swap_remove(rng.gen_range(0..c as usize)) - 1);
+            let ndx = ListIndex::from(indexes.swap_remove(rng.random_range(0..c as usize)) - 1);
             println!("IndexList - remove {}", ndx);
             let num = list.remove(ndx).unwrap();
             //println!("IndexList: {}", list.to_debug_string());

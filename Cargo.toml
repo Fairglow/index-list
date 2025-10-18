@@ -1,6 +1,6 @@
 [package]
 name = "index_list"
-version = "0.3.0"
+version = "0.3.1"
 description = "A doubly linked list implemented in safe Rust using vector indexes"
 keywords = ["linked-list"]
 categories = ["data-structures"]
@@ -10,9 +10,16 @@ license = "MPL-2.0"
 repository = "https://github.com/Fairglow/index-list.git"
 readme = "README.md"
 
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+walkdir = "2"
+comfy-table = "7.1"
+
 [dev-dependencies]
 criterion = "0.7"
-rand = "0.8"
+rand = "0.9"
+slab = "0.4"
 
 [features]
 # `iter_mut` is guarded behind a feature flag because the implementation uses unsafety

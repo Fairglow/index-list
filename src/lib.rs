@@ -724,7 +724,7 @@ impl<T> IndexList<T> {
     /// ```
     #[inline]
     #[cfg(feature = "iter_mut")]
-    pub fn iter_mut(&mut self) -> ListIterMut<T> {
+    pub fn iter_mut(&mut self) -> ListIterMut<'_, T> {
         ListIterMut {
             start: self.first_index(),
             end: self.last_index(),

@@ -46,29 +46,91 @@ Then there is the unsafe method (`trim_swap`) which will swap the elements to mo
 
 ## Mutable iterator
 
-There is currently no `iter_mut` method, however there is a simple and safe pattern to achieve the same effect, using a `while` loop:
+A mutable iterator is available via the `iter_mut` feature flag. To enable it, add the following to your `Cargo.toml`:
+
+```toml
+[dependencies]
+index_list = { version = "0.3.0", features = ["iter_mut"] }
+```
+
+This feature is guarded behind a feature flag because the implementation of `iter_mut` uses a small block of `unsafe` code to satisfy the borrow checker. While it has been carefully written and tested, it is important for users to be aware of this.
+
+If you prefer to avoid `unsafe` code altogether, you can still safely mutate elements in the list with the following pattern:
 
 ```rust
 let mut index = list.first_index();
 while index.is_some() {
-    let elem = list.get_mut(index).unwrap();
-    *elem = elem.to_string().to_lowercase();
+    if let Some(elem) = list.get_mut(index) {
+        // mutate elem
+    }
     index = list.next_index(index);
 }
 ```
-See [iter_mut_alternative.rs](examples/iter_mut_alternative.rs) for the full example.
+
+A full example of this pattern is available in the [iter_mut alternative](examples/iter_mut_alternative.rs) example source code.
 
 ## Safe Rust
 
-The index list has no unsafe code blocks. The reason is that it does not use pointers between the elements, but their index in the vector instead.
+The core of this crate is implemented in 100% safe Rust, with no `unsafe` code blocks. The reason is that it does not use pointers between the elements, but their index in the vector instead.
 
-However the `trim_swap` method is considered unsafe, but for a totally different reason, because it may change the index of some elements. Therefore any cached indexes may be invalid after the method call and will eventually point to a different element when that index is reused. Use the method wisely and make sure no such indexes are kept at that time.
+However, there are two things to be aware of:
+
+1.  The `trim_swap` method, while being 100% safe, is considered "unsafe" from a logical point of view because it can invalidate indexes. If you have cached an index somewhere, it may point to a different element after `trim_swap` is called. Use this method with care.
+2.  The optional `iter_mut` feature uses a small `unsafe` block to create a mutable iterator. This is a common pattern for this kind of data structure, but it is important to be aware of it.
 
 ## Performance
 
-In my simple benchmark tests the index list appears to offer more than twice the performance of LinkedList, plus it offers some functionality that is only experimental for LinkedList, such as the cursor methods.
+This crate comes with a comprehensive benchmark suite that compares `IndexList` against several standard library collections and other similar crates. For details on how to run the benchmarks and interpret the results, see the [Benchmarking](#benchmarking) section below.
 
-However, this may not reflect any real-life performance difference and you are urged to evaluate this in your own use-case rather than relying on the figures provided by the included benchmarks.
+## Benchmarking
+
+`IndexList` includes a set of benchmarks powered by `criterion`. These benchmarks are designed to evaluate the performance of various operations and compare it against other list-like data structures.
+
+### Available Benchmarks
+
+*   **head:** Measures the performance of adding and removing elements from the front of the list.
+*   **tail:** Measures the performance of adding and removing elements from the back of the list.
+*   **body:** Measures the performance of inserting and removing elements in the middle of the list.
+*   **random:** Measures the performance of inserting and removing elements at random positions.
+*   **walk:** Measures the performance of iterating through the list using `next_index` and `prev_index`.
+*   **iter:** Measures the performance of iterating through the list using the `iter()` method.
+*   **iter_mut:** Measures the performance of mutable iteration using the `iter_mut()` method.
+
+> NOTE: These benchmarks may not reflect any real-life performance difference and you are urged to evaluate this in your own use-case rather than relying on the figures provided by the included benchmarks.
+
+### How to Run Benchmarks
+
+To run the standard benchmarks, use the following command:
+
+```shell
+cargo bench
+```
+
+To include the `iter_mut` benchmarks, you need to enable the `iter_mut` feature:
+
+```shell
+cargo bench --features="iter_mut"
+```
+
+### Benchmark Comparison Table
+
+After running the benchmarks, you can generate a summary table to easily compare the performance of the different implementations. To do this, run the `bench-table` example:
+
+```shell
+cargo run --example bench-table
+```
+
+This will parse the benchmark results and print a compact, formatted table to the console.
+
+You can also compare the results from the `base` and `new` benchmark runs:
+
+```shell
+cargo run --example bench-table -- --base --new
+```
+
+## License
+
+This project is licensed under the [Mozilla Public License, v. 2.0](LICENSE).
 
 ## Reasons to use IndexList
 
