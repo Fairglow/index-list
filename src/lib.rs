@@ -13,7 +13,9 @@
 //! A new IndexList can be created empty with the `new` method, or created from
 //! an existing vector with `IndexList::from`.
 //!
+#![no_std]
 #![cfg_attr(not(feature = "iter_mut"), forbid(unsafe_code))]
+extern crate alloc;
 
 pub mod listdrainiter;
 pub mod listindex;
@@ -23,8 +25,9 @@ pub mod listitermut;
 mod listnode;
 mod listends;
 
-use std::{cmp::Ordering, default::Default, fmt};
-use std::iter::{Extend, FromIterator};
+use core::{cmp::Ordering, default::Default, fmt};
+use core::iter::{Extend, FromIterator};
+use alloc::{vec::Vec, string::String, format};
 use crate::{listnode::ListNode, listends::ListEnds};
 pub use crate::listindex::ListIndex as ListIndex;
 pub use crate::listiter::ListIter as ListIter;
@@ -1156,7 +1159,8 @@ impl<T> Extend<T> for IndexList<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::mem::size_of;
+    use core::mem::size_of;
+    use alloc::vec;
 
     #[test]
     fn test_struct_sizes() {

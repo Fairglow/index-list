@@ -1,6 +1,6 @@
 //! Definition of the ListIndex type
 //! 
-use std::{convert::TryFrom, default::Default, fmt, num::NonZeroU32};
+use core::{convert::TryFrom, default::Default, fmt, num::NonZeroU32};
 
 /// Vector index for the elements in the list. They are typically not
 /// squential.

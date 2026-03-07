@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 //! The definitions of the ListIterMut type
-use std::iter::{DoubleEndedIterator, FusedIterator};
+use core::iter::{DoubleEndedIterator, FusedIterator};
 
 use crate::listindex::ListIndex;
 use crate::listnode::ListNode;

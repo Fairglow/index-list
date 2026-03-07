@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 //! The definition of the ListDrainIter type
-use std::iter::{DoubleEndedIterator, FusedIterator};
+use core::iter::{DoubleEndedIterator, FusedIterator};
 
 use crate::{listiter::ListIter, IndexList};
 
