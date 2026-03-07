@@ -135,12 +135,13 @@ This project is licensed under the [Mozilla Public License, v. 2.0](LICENSE).
 ## Reasons to use IndexList
 
 * Data that is frequently inserted or removed from the body of the list (not the ends).
+* Use-case where walking the list is required.
 * Data that is reordered often, or sorted.
 * Need persistent indexes even when data is inserted or removed.
 * Want to maintain skip elements for taking larger steps through the list.
 * Need to cache certain elements for fast retrieval, without holding a reference to it.
 
-## Reasons to use an alternative
+## Reasons to use other alternatives
 
 * Data that is mainly inserted and removed at the ends of the list, then VecDeque is likely a better alternative.
 * Merges and splits of the lists are common; these are heavy `O(n)` operations in the IndexList design. The LinkedList is likely much better in this respect.
@@ -152,3 +153,16 @@ This is not an exhaustive list of alternatives, and I may have missed important 
 * [`std::collections::LinkedList`](https://doc.rust-lang.org/std/collections/struct.LinkedList.html)
 * [`std::collections::VecDeque`](https://doc.rust-lang.org/std/collections/struct.VecDeque.html)
 * [`std::vec::Vec`](https://doc.rust-lang.org/std/vec/struct.Vec.html)
+* [`pie_core::PieList`](https://docs.rs/pie_core/0.2.3/pie_core/struct.PieList.html)
+
+### Reasons to use PieList over IndexList
+
+PieList[^1] shares most of the reasons for picking IndexList, but with these notable improvements:
+
+* Multiple lists of the same kind.
+* O(1) split and merge for lists.
+* Small data size, where data is typically always accessed when traversing the list.
+
+The PieList is optimized for the foundation of a fibonacci heap, with a priority queue use-case.
+
+[^1]: PieList is a part of the [pie_core](https://github.com/Fairglow/pie_core) crate.
