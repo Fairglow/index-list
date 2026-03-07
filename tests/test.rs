@@ -7,7 +7,7 @@ use std::collections::HashSet;
 use std::mem::size_of;
 
 use index_list::{IndexList, ListIndex};
-use rand::{seq::SliceRandom, Rng};
+use rand::{seq::SliceRandom, RngExt};
 
 fn debug_print_indexes(list: &IndexList<u64>) {
     let mut index = list.first_index();

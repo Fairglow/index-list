@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use criterion::{criterion_group, criterion_main, Criterion};
-use rand::Rng;
+use rand::RngExt;
 use slab::Slab;
 use std::collections::{LinkedList, vec_deque::VecDeque};
 use std::hint::black_box;
