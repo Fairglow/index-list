@@ -2,24 +2,27 @@
 name = "index_list"
 version = "0.3.2"
 description = "A doubly linked list implemented in safe Rust using vector indexes"
-keywords = ["linked-list"]
+keywords = ["linked-list", "list", "index", "doubly-linked-list"]
 categories = ["data-structures"]
 authors = ["Stefan Lindblad <stefan.lindblad@linux.com>"]
 edition = "2021"
 license = "MPL-2.0"
 repository = "https://github.com/Fairglow/index-list.git"
+homepage = "https://github.com/Fairglow/index-list"
+documentation = "https://docs.rs/index_list"
 readme = "README.md"
+exclude = [".jj/", ".idea/", ".github/"]
 
 [dependencies]
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-walkdir = "2"
-comfy-table = "7.1"
 
 [dev-dependencies]
 criterion = "0.8"
 rand = "0.10"
 slab = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+walkdir = "2"
+comfy-table = "7.1"
 
 [features]
 # `iter_mut` is guarded behind a feature flag because the implementation uses unsafety
