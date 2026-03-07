@@ -733,7 +733,7 @@ impl<T> IndexList<T> {
             end: self.last_index(),
             len: self.len(),
             elems: self.elems.as_mut_ptr(),
-            nodes: &*self.nodes,
+            nodes: &self.nodes,
         }
     }
     /// Create a draining iterator over all the elements.
