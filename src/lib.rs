@@ -26,7 +26,7 @@ mod listnode;
 mod listends;
 
 use core::{cmp::Ordering, default::Default, fmt};
-use core::iter::{Extend, FromIterator};
+use core::iter::{DoubleEndedIterator, Extend, FromIterator, FusedIterator};
 use alloc::{vec::Vec, string::String, format};
 use crate::{listnode::ListNode, listends::ListEnds};
 pub use crate::listindex::ListIndex as ListIndex;
@@ -37,7 +37,7 @@ pub use crate::listdrainiter::ListDrainIter as ListDrainIter;
 pub type Index = ListIndex; // for backwards compatibility with 0.2.7
 
 /// Doubly-linked list implemented in safe Rust.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IndexList<T> {
     elems: Vec<Option<T>>,
     nodes: Vec<ListNode>,
@@ -282,7 +282,7 @@ impl<T> IndexList<T> {
     /// are the same index.
     ///
     /// This is similar to calling `let elem = self.remove(this);` followed by `self.insert_before(that, elem)`
-    /// except that it doesn't invalildate or change the index `this`. That is, the index `this` is guaranteed
+    /// except that it doesn't invalidate or change the index `this`. That is, the index `this` is guaranteed
     /// to still point to the same element `elem` after this operation completes.
     ///
     /// Example:
@@ -309,7 +309,7 @@ impl<T> IndexList<T> {
     /// are the same index.
     ///
     /// This is similar to calling `let elem = self.remove(this);` followed by `self.insert_after(that, elem)`
-    /// except that it doesn't invalildate or change the index `this`. That is, the index `this` is guaranteed
+    /// except that it doesn't invalidate or change the index `this`. That is, the index `this` is guaranteed
     /// to still point to the same element `elem` after this operation completes.
     ///
     /// Example:
@@ -336,7 +336,7 @@ impl<T> IndexList<T> {
     /// Returns `true` if the operation was successful. This will fail if `this` is an invalid index.
     ///
     /// This is similar to calling `let elem = self.remove(this);` followed by `self.insert_first(elem)`
-    /// except that it doesn't invalildate or change the index `this`. That is, the index `this` is guaranteed
+    /// except that it doesn't invalidate or change the index `this`. That is, the index `this` is guaranteed
     /// to still point to the same element `elem` after this operation completes.
     ///
     /// Example:
@@ -362,7 +362,7 @@ impl<T> IndexList<T> {
     /// Returns `true` if the operation was successful. This will fail if `this` is an invalid index.
     ///
     /// This is similar to calling `let elem = self.remove(this);` followed by `self.insert_last(elem)`
-    /// except that it doesn't invalildate or change the index `this`. That is, the index `this` is guaranteed
+    /// except that it doesn't invalidate or change the index `this`. That is, the index `this` is guaranteed
     /// to still point to the same element `elem` after this operation completes.
     ///
     /// Example:
@@ -551,9 +551,7 @@ impl<T> IndexList<T> {
     /// ```
     #[inline]
     pub fn contains(&self, elem: T) -> bool
-    where
-        T: PartialEq,
-    {
+    where T: PartialEq {
         self.elems.contains(&Some(elem))
     }
     /// Returns the index of the element containg the data.
@@ -570,9 +568,7 @@ impl<T> IndexList<T> {
     /// ```
     #[inline]
     pub fn index_of(&self, elem: T) -> ListIndex
-    where
-        T: PartialEq,
-    {
+    where T: PartialEq {
         ListIndex::from(self.elems.iter().position(|e| {
             if let Some(data) = e {
                 data == &elem
@@ -764,7 +760,7 @@ impl<T> IndexList<T> {
     /// # assert_eq!(format!("{:?}", vector), "[1, 2, 3]");
     /// ```
     pub fn to_vec(&self) -> Vec<&T> {
-        self.iter().filter_map(Option::Some).collect()
+        self.iter().collect()
     }
     /// Insert all the elements from the vector, which will be drained.
     ///
@@ -1153,6 +1149,51 @@ impl<T> Extend<T> for IndexList<T> {
         for elem in iter {
             self.insert_last(elem);
         }
+    }
+}
+
+impl<T: PartialEq> PartialEq for IndexList<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.len() == other.len() && self.iter().eq(other.iter())
+    }
+}
+
+impl<T: Eq> Eq for IndexList<T> {}
+
+/// An owning iterator over the elements of an `IndexList`.
+pub struct IntoIter<T> {
+    list: IndexList<T>,
+}
+
+impl<T> Iterator for IntoIter<T> {
+    type Item = T;
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        self.list.remove_first()
+    }
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.list.len();
+        (len, Some(len))
+    }
+}
+
+impl<T> DoubleEndedIterator for IntoIter<T> {
+    #[inline]
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.list.remove_last()
+    }
+}
+
+impl<T> ExactSizeIterator for IntoIter<T> {}
+impl<T> FusedIterator for IntoIter<T> {}
+
+impl<T> IntoIterator for IndexList<T> {
+    type Item = T;
+    type IntoIter = IntoIter<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter { list: self }
     }
 }
 

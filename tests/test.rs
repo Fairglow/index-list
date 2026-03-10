@@ -35,7 +35,7 @@ fn test_instantiate() {
     assert_eq!(size_of::<ListIndex>(), 4);
     assert_eq!(list.len(), 0);
     assert_eq!(list.capacity(), 0);
-    assert_eq!(list.is_index_used(null), false);
+    assert!(!list.is_index_used(null));
     assert_eq!(list.first_index(), null);
     assert_eq!(list.last_index(), null);
     assert_eq!(list.next_index(null), null);
@@ -53,7 +53,7 @@ fn test_instantiate() {
     assert_eq!(list.remove_last(), None);
     assert_eq!(list.remove(null), None);
     assert_eq!(list.index_of(0), null);
-    assert_eq!(list.contains(0), false);
+    assert!(!list.contains(0));
     assert_eq!(list.to_vec(), Vec::<&u64>::new());
     let mut empty_list = IndexList::new();
     list.append(&mut empty_list);
@@ -68,7 +68,7 @@ fn basic_insert_remove() {
     let count = 9;
     (0..count).for_each(|i| {
         let ndx = list.insert_first(i);
-        assert_eq!(list.is_index_used(ndx), true);
+        assert!(list.is_index_used(ndx));
     });
     println!("{}", list);
     assert_eq!(list.capacity(), count as usize);
@@ -76,7 +76,7 @@ fn basic_insert_remove() {
     list.trim_swap();
     (0..count).rev().for_each(|i| {
         assert_eq!(list.remove_first(), Some(i));
-        assert_eq!(list.is_index_used(ListIndex::from(i as usize)), false);
+        assert!(!list.is_index_used(ListIndex::from(i as usize)));
         assert_eq!(list.len(), i as usize);
     });
     assert_eq!(list.remove_first(), None);
@@ -106,9 +106,9 @@ fn test_append() {
     assert_eq!(list.capacity(), 6);
     let index = list.move_index(list.first_index(), 3);
     assert_eq!(list.get(index), Some(&"D"));
-    list.get_mut(index).map(|chr| {
+    if let Some(chr) = list.get_mut(index) {
         *chr = "G";
-    });
+    }
     assert_eq!(list.get(index), Some(&"G"));
     let parts: Vec<&str> = list.iter().map(|e| e.as_ref()).collect();
     assert_eq!(parts.join(", "), "A, B, C, G, E, F");
@@ -157,7 +157,7 @@ fn test_single_element() {
         };
         assert_eq!(val, Some(num));
     }
-    assert_eq!(list.is_empty(), true);
+    assert!(list.is_empty());
     assert_eq!(list.capacity(), 1);
     assert_eq!(list.len(), 0);
 }
@@ -240,7 +240,7 @@ fn insert_remove_variants() {
         }
         assert_eq!(list.len(), count);
         for c in (1..=count).rev() {
-            let ndx = ListIndex::from(indexes.swap_remove(rng.random_range(0..c as usize)) - 1);
+            let ndx = ListIndex::from(indexes.swap_remove(rng.random_range(0..c)) - 1);
             println!("IndexList - remove {}", ndx);
             let num = list.remove(ndx).unwrap();
             //println!("IndexList: {}", list.to_debug_string());
@@ -253,4 +253,363 @@ fn insert_remove_variants() {
         list.trim_safe();
         assert_eq!(list.capacity(), 0);
     }
+}
+
+// ── Clone ──────────────────────────────────────────────────────────
+
+#[test]
+fn test_clone_preserves_order_and_independence() {
+    let mut list = IndexList::from(&mut vec![1, 2, 3]);
+    let cloned = list.clone();
+    assert_eq!(list.len(), cloned.len());
+    assert_eq!(list.to_string(), cloned.to_string());
+    // Mutating original doesn't affect clone
+    list.remove_first();
+    assert_eq!(list.len(), 2);
+    assert_eq!(cloned.len(), 3);
+    assert_eq!(cloned.get_first(), Some(&1));
+}
+
+#[test]
+fn test_clone_empty() {
+    let list = IndexList::<u64>::new();
+    let cloned = list.clone();
+    assert!(cloned.is_empty());
+    assert_eq!(cloned.capacity(), 0);
+}
+
+// ── PartialEq / Eq ────────────────────────────────────────────────
+
+#[test]
+fn test_eq_same_elements() {
+    let a = IndexList::from(&mut vec![1, 2, 3]);
+    let b = IndexList::from(&mut vec![1, 2, 3]);
+    assert_eq!(a, b);
+}
+
+#[test]
+fn test_eq_different_elements() {
+    let a = IndexList::from(&mut vec![1, 2, 3]);
+    let b = IndexList::from(&mut vec![1, 2, 4]);
+    assert_ne!(a, b);
+}
+
+#[test]
+fn test_eq_different_lengths() {
+    let a = IndexList::from(&mut vec![1, 2]);
+    let b = IndexList::from(&mut vec![1, 2, 3]);
+    assert_ne!(a, b);
+}
+
+#[test]
+fn test_eq_different_order() {
+    let a = IndexList::from(&mut vec![1, 2, 3]);
+    let b = IndexList::from(&mut vec![3, 2, 1]);
+    assert_ne!(a, b);
+}
+
+#[test]
+fn test_eq_empty_lists() {
+    let a = IndexList::<u64>::new();
+    let b = IndexList::<u64>::new();
+    assert_eq!(a, b);
+}
+
+#[test]
+fn test_eq_after_clone() {
+    let list = IndexList::from(&mut vec![10, 20, 30]);
+    let cloned = list.clone();
+    assert_eq!(list, cloned);
+}
+
+// ── Owned IntoIterator ────────────────────────────────────────────
+
+#[test]
+fn test_into_iter_forward() {
+    let list = IndexList::from(&mut vec![1, 2, 3]);
+    let collected: Vec<u64> = list.into_iter().collect();
+    assert_eq!(collected, vec![1, 2, 3]);
+}
+
+#[test]
+fn test_into_iter_backward() {
+    let list = IndexList::from(&mut vec![1, 2, 3]);
+    let collected: Vec<u64> = list.into_iter().rev().collect();
+    assert_eq!(collected, vec![3, 2, 1]);
+}
+
+#[test]
+fn test_into_iter_double_ended() {
+    let list = IndexList::from(&mut vec![1, 2, 3, 4]);
+    let mut it = list.into_iter();
+    assert_eq!(it.next(), Some(1));
+    assert_eq!(it.next_back(), Some(4));
+    assert_eq!(it.next(), Some(2));
+    assert_eq!(it.next_back(), Some(3));
+    assert_eq!(it.next(), None);
+    assert_eq!(it.next_back(), None);
+}
+
+#[test]
+fn test_into_iter_size_hint() {
+    let list = IndexList::from(&mut vec![10, 20, 30]);
+    let mut it = list.into_iter();
+    assert_eq!(it.len(), 3);
+    it.next();
+    assert_eq!(it.len(), 2);
+    it.next_back();
+    assert_eq!(it.len(), 1);
+    it.next();
+    assert_eq!(it.len(), 0);
+}
+
+#[test]
+fn test_into_iter_empty() {
+    let list = IndexList::<u64>::new();
+    let mut it = list.into_iter();
+    assert_eq!(it.next(), None);
+    assert_eq!(it.next_back(), None);
+    assert_eq!(it.len(), 0);
+}
+
+#[test]
+fn test_into_iter_for_loop() {
+    let list = IndexList::from(&mut vec![10, 20, 30]);
+    let mut sum = 0u64;
+    for val in list {
+        sum += val;
+    }
+    assert_eq!(sum, 60);
+}
+
+// ── shift_index operations ────────────────────────────────────────
+
+#[test]
+fn test_shift_index_before() {
+    let mut list = IndexList::from(&mut vec![1, 2, 3, 4]);
+    let last = list.last_index();
+    let second = list.next_index(list.first_index());
+    // Move 4 before 2: [1, 4, 2, 3]
+    assert!(list.shift_index_before(last, second));
+    assert_eq!(list.to_string(), "[1 >< 4 >< 2 >< 3]");
+    assert_eq!(list.get(last), Some(&4));
+}
+
+#[test]
+fn test_shift_index_after() {
+    let mut list = IndexList::from(&mut vec![1, 2, 3, 4]);
+    let first = list.first_index();
+    let third = list.move_index(first, 2);
+    // Move 1 after 3: [2, 3, 1, 4]
+    assert!(list.shift_index_after(first, third));
+    assert_eq!(list.to_string(), "[2 >< 3 >< 1 >< 4]");
+    assert_eq!(list.get(first), Some(&1));
+}
+
+#[test]
+fn test_shift_index_to_front() {
+    let mut list = IndexList::from(&mut vec![1, 2, 3]);
+    let last = list.last_index();
+    assert!(list.shift_index_to_front(last));
+    assert_eq!(list.to_string(), "[3 >< 1 >< 2]");
+    assert_eq!(list.first_index(), last);
+}
+
+#[test]
+fn test_shift_index_to_back() {
+    let mut list = IndexList::from(&mut vec![1, 2, 3]);
+    let first = list.first_index();
+    assert!(list.shift_index_to_back(first));
+    assert_eq!(list.to_string(), "[2 >< 3 >< 1]");
+    assert_eq!(list.last_index(), first);
+}
+
+#[test]
+fn test_shift_index_invalid() {
+    let mut list = IndexList::from(&mut vec![1, 2, 3]);
+    let first = list.first_index();
+    let null = ListIndex::from(None);
+    // Same index
+    assert!(!list.shift_index_before(first, first));
+    // Invalid index
+    assert!(!list.shift_index_before(null, first));
+    assert!(!list.shift_index_after(first, null));
+    assert!(!list.shift_index_to_front(null));
+    assert!(!list.shift_index_to_back(null));
+}
+
+// ── swap_index ────────────────────────────────────────────────────
+
+#[test]
+fn test_swap_index() {
+    let mut list = IndexList::from(&mut vec![10, 20, 30]);
+    let first = list.first_index();
+    let last = list.last_index();
+    list.swap_index(first, last);
+    assert_eq!(list.get(first), Some(&30));
+    assert_eq!(list.get(last), Some(&10));
+    assert_eq!(list.to_string(), "[30 >< 20 >< 10]");
+}
+
+// ── prepend ───────────────────────────────────────────────────────
+
+#[test]
+fn test_prepend() {
+    let mut list = IndexList::from(&mut vec![4, 5, 6]);
+    let mut other = IndexList::from(&mut vec![1, 2, 3]);
+    list.prepend(&mut other);
+    assert!(other.is_empty());
+    assert_eq!(list.len(), 6);
+    assert_eq!(list.to_string(), "[1 >< 2 >< 3 >< 4 >< 5 >< 6]");
+}
+
+// ── Extend ────────────────────────────────────────────────────────
+
+#[test]
+fn test_extend() {
+    let mut list = IndexList::from(&mut vec![1, 2]);
+    list.extend(vec![3, 4, 5]);
+    assert_eq!(list.len(), 5);
+    assert_eq!(list.to_string(), "[1 >< 2 >< 3 >< 4 >< 5]");
+}
+
+// ── FromIterator ──────────────────────────────────────────────────
+
+#[test]
+fn test_from_iterator() {
+    let list: IndexList<u64> = (1..=5).collect();
+    assert_eq!(list.len(), 5);
+    assert_eq!(list.to_string(), "[1 >< 2 >< 3 >< 4 >< 5]");
+}
+
+// ── From single element ───────────────────────────────────────────
+
+#[test]
+fn test_from_single_element() {
+    let list: IndexList<u64> = 42u64.into();
+    assert_eq!(list.len(), 1);
+    assert_eq!(list.get_first(), Some(&42));
+}
+
+// ── Display ───────────────────────────────────────────────────────
+
+#[test]
+fn test_display_empty() {
+    let list = IndexList::<u64>::new();
+    assert_eq!(list.to_string(), "[]");
+}
+
+#[test]
+fn test_display_single() {
+    let list: IndexList<u64> = 99u64.into();
+    assert_eq!(list.to_string(), "[99]");
+}
+
+#[test]
+fn test_display_multiple() {
+    let list = IndexList::from(&mut vec![1, 2, 3]);
+    assert_eq!(list.to_string(), "[1 >< 2 >< 3]");
+}
+
+// ── contains / index_of ───────────────────────────────────────────
+
+#[test]
+fn test_contains_and_index_of() {
+    let list = IndexList::from(&mut vec![10, 20, 30]);
+    assert!(list.contains(20));
+    assert!(!list.contains(99));
+    let idx = list.index_of(30);
+    assert!(idx.is_some());
+    assert_eq!(list.get(idx), Some(&30));
+    let missing = list.index_of(99);
+    assert!(missing.is_none());
+}
+
+// ── with_capacity ─────────────────────────────────────────────────
+
+#[test]
+fn test_with_capacity() {
+    let list = IndexList::<u64>::with_capacity(100);
+    assert!(list.is_empty());
+    assert_eq!(list.capacity(), 0);
+    assert_eq!(list.len(), 0);
+}
+
+// ── drain_iter double-ended and size_hint ─────────────────────────
+
+#[test]
+fn test_drain_iter_double_ended() {
+    let mut list = IndexList::from(&mut vec![1, 2, 3, 4]);
+    let mut drain = list.drain_iter();
+    assert_eq!(drain.len(), 4);
+    assert_eq!(drain.next(), Some(1));
+    assert_eq!(drain.len(), 3);
+    assert_eq!(drain.next_back(), Some(4));
+    assert_eq!(drain.len(), 2);
+    assert_eq!(drain.next(), Some(2));
+    assert_eq!(drain.next_back(), Some(3));
+    assert_eq!(drain.next(), None);
+    assert_eq!(drain.next_back(), None);
+    assert_eq!(drain.len(), 0);
+}
+
+// ── iter rev ──────────────────────────────────────────────────────
+
+#[test]
+fn test_iter_rev() {
+    let list = IndexList::from(&mut vec![1, 2, 3]);
+    let reversed: Vec<&u64> = list.iter().rev().collect();
+    assert_eq!(reversed, vec![&3, &2, &1]);
+}
+
+// ── for &list (IntoIterator for &IndexList) ───────────────────────
+
+#[test]
+fn test_ref_into_iterator() {
+    let list = IndexList::from(&mut vec![10, 20, 30]);
+    let mut sum = 0u64;
+    for val in &list {
+        sum += val;
+    }
+    assert_eq!(sum, 60);
+    assert_eq!(list.len(), 3);
+}
+
+// ── ListIndex display ─────────────────────────────────────────────
+
+#[test]
+fn test_list_index_display() {
+    let null = ListIndex::from(None);
+    assert_eq!(null.to_string(), "|");
+    let list = IndexList::from(&mut vec![42u64]);
+    let idx = list.first_index();
+    assert!(idx.is_some());
+    assert_eq!(idx.to_string(), "1");
+}
+
+// ── move_index ────────────────────────────────────────────────────
+
+#[test]
+fn test_move_index_forward_and_back() {
+    let list = IndexList::from(&mut vec!["A", "B", "C", "D", "E"]);
+    let idx = list.first_index();
+    let moved = list.move_index(idx, 4);
+    assert_eq!(list.get(moved), Some(&"E"));
+    let back = list.move_index(moved, -3);
+    assert_eq!(list.get(back), Some(&"B"));
+    let past_end = list.move_index(moved, 1);
+    assert!(past_end.is_none());
+}
+
+// ── peek_next / peek_prev ─────────────────────────────────────────
+
+#[test]
+fn test_peek_next_prev() {
+    let list = IndexList::from(&mut vec![1, 2, 3]);
+    let first = list.first_index();
+    let last = list.last_index();
+    assert_eq!(list.peek_next(first), Some(&2));
+    assert_eq!(list.peek_prev(last), Some(&2));
+    assert_eq!(list.peek_prev(first), None);
+    assert_eq!(list.peek_next(last), None);
 }

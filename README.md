@@ -1,6 +1,6 @@
-[![Rust](https://github.com/Fairglow/index-list/actions/workflows/rust.yml/badge.svg)](https://github.com/Fairglow/index-list/actions/workflows/rust.yml)
-
 # Index List
+
+[![Rust](https://github.com/Fairglow/index-list/actions/workflows/rust.yml/badge.svg)](https://github.com/Fairglow/index-list/actions/workflows/rust.yml)
 
 An index list is a hybrid between a vector and a linked-list, with some of the properties of each. Every element has an index in the vector and can be accessed directly there. This index is persistent as long as the element remains in the list and is not affected by other elements of the list. An index does not change if the element is moved in the list, nor when other elements are inserted or removed from the list.
 
@@ -15,13 +15,15 @@ Old indexes will be reused in FIFO fashion, before new indexes are added.
 The list elements are placed in a vector, which is why they can be accessed directly, where each element knows the index of the element before and after it, as well as the data contained at that index. This indirection makes it easy to implement the list safely in Rust, because the traditional next and previous pointers are replaced by their respective indexes, which are just numbers.
 
 You can think of a list node like this:
+
 ```rust
 struct IndexElem<T> {
-	next: Option<u32>,
-	prev: Option<u32>,
-	data: Option<T>,
+    next: Option<u32>,
+    prev: Option<u32>,
+    data: Option<T>,
 }
 ```
+
 Where an element without data is free and if either `next` or `prev` is `None` then that is the end of the list in that direction.
 
 ## The element vector
@@ -34,7 +36,7 @@ To walk the list the user needs a starting index. One can be obtained from eithe
 
 See the included [example code](examples/indexlist.rs) for how this works.
 
-Note that any calls to the `trim_swap` method, may invalidate one or more index. It van be verified because any index greater than the `capacity` has been moved. To prevent this invalidation, you can hold a reference to the list as well as the index, but this will also block any and all modifications to the list while the reference is held.
+Note that any calls to the `trim_swap` method, may invalidate one or more index. It can be verified because any index greater than the `capacity` has been moved. To prevent this invalidation, you can hold a reference to the list as well as the index, but this will also block any and all modifications to the list while the reference is held.
 
 ## The list capacity
 
@@ -75,8 +77,8 @@ The core of this crate is implemented in 100% safe Rust, with no `unsafe` code b
 
 However, there are two things to be aware of:
 
-1.  The `trim_swap` method, while being 100% safe, is considered "unsafe" from a logical point of view because it can invalidate indexes. If you have cached an index somewhere, it may point to a different element after `trim_swap` is called. Use this method with care.
-2.  The optional `iter_mut` feature uses a small `unsafe` block to create a mutable iterator. This is a common pattern for this kind of data structure, but it is important to be aware of it.
+1. The `trim_swap` method, while being 100% safe, is considered "unsafe" from a logical point of view because it can invalidate indexes. If you have cached an index somewhere, it may point to a different element after `trim_swap` is called. Use this method with care.
+2. The optional `iter_mut` feature uses a small `unsafe` block to create a mutable iterator. This is a common pattern for this kind of data structure, but it is important to be aware of it.
 
 ## Performance
 
@@ -88,13 +90,13 @@ This crate comes with a comprehensive benchmark suite that compares `IndexList` 
 
 ### Available Benchmarks
 
-*   **head:** Measures the performance of adding and removing elements from the front of the list.
-*   **tail:** Measures the performance of adding and removing elements from the back of the list.
-*   **body:** Measures the performance of inserting and removing elements in the middle of the list.
-*   **random:** Measures the performance of inserting and removing elements at random positions.
-*   **walk:** Measures the performance of iterating through the list using `next_index` and `prev_index`.
-*   **iter:** Measures the performance of iterating through the list using the `iter()` method.
-*   **iter_mut:** Measures the performance of mutable iteration using the `iter_mut()` method.
+- **head:** Measures the performance of adding and removing elements from the front of the list.
+- **tail:** Measures the performance of adding and removing elements from the back of the list.
+- **body:** Measures the performance of inserting and removing elements in the middle of the list.
+- **random:** Measures the performance of inserting and removing elements at random positions.
+- **walk:** Measures the performance of iterating through the list using `next_index` and `prev_index`.
+- **iter:** Measures the performance of iterating through the list using the `iter()` method.
+- **iter_mut:** Measures the performance of mutable iteration using the `iter_mut()` method.
 
 > NOTE: These benchmarks may not reflect any real-life performance difference and you are urged to evaluate this in your own use-case rather than relying on the figures provided by the included benchmarks.
 
@@ -134,34 +136,34 @@ This project is licensed under the [Mozilla Public License, v. 2.0](LICENSE).
 
 ## Reasons to use IndexList
 
-* Data that is frequently inserted or removed from the body of the list (not the ends).
-* Use-case where walking the list is required.
-* Data that is reordered often, or sorted.
-* Need persistent indexes even when data is inserted or removed.
-* Want to maintain skip elements for taking larger steps through the list.
-* Need to cache certain elements for fast retrieval, without holding a reference to it.
+- Data that is frequently inserted or removed from the body of the list (not the ends).
+- Use-case where walking the list is required.
+- Data that is reordered often, or sorted.
+- Need persistent indexes even when data is inserted or removed.
+- Want to maintain skip elements for taking larger steps through the list.
+- Need to cache certain elements for fast retrieval, without holding a reference to it.
 
 ## Reasons to use other alternatives
 
-* Data that is mainly inserted and removed at the ends of the list, then VecDeque is likely a better alternative.
-* Merges and splits of the lists are common; these are heavy `O(n)` operations in the IndexList design. The LinkedList is likely much better in this respect.
-* When handling lists longer than 4 billion entries, as this list is limited to 32-bit indexes.
-* When you need to shrink the list often, because `trim_swap` is expensive and has the side-effect of potentially invalidating indexes. For instance a LinkedList does not require trimming at all.
+- Data that is mainly inserted and removed at the ends of the list, then VecDeque is likely a better alternative.
+- Merges and splits of the lists are common; these are heavy `O(n)` operations in the IndexList design. The LinkedList is likely much better in this respect.
+- When handling lists longer than 4 billion entries, as this list is limited to 32-bit indexes.
+- When you need to shrink the list often, because `trim_swap` is expensive and has the side-effect of potentially invalidating indexes. For instance a LinkedList does not require trimming at all.
 
 This is not an exhaustive list of alternatives, and I may have missed important choices, but these were the ones that I was aware of at the time of writing this.
 
-* [`std::collections::LinkedList`](https://doc.rust-lang.org/std/collections/struct.LinkedList.html)
-* [`std::collections::VecDeque`](https://doc.rust-lang.org/std/collections/struct.VecDeque.html)
-* [`std::vec::Vec`](https://doc.rust-lang.org/std/vec/struct.Vec.html)
-* [`pie_core::PieList`](https://docs.rs/pie_core/0.2.3/pie_core/struct.PieList.html)
+- [`std::collections::LinkedList`](https://doc.rust-lang.org/std/collections/struct.LinkedList.html)
+- [`std::collections::VecDeque`](https://doc.rust-lang.org/std/collections/struct.VecDeque.html)
+- [`std::vec::Vec`](https://doc.rust-lang.org/std/vec/struct.Vec.html)
+- [`pie_core::PieList`](https://docs.rs/pie_core/0.2.3/pie_core/struct.PieList.html)
 
 ### Reasons to use PieList over IndexList
 
 PieList[^1] shares most of the reasons for picking IndexList, but with these notable improvements:
 
-* Multiple lists of the same kind.
-* O(1) split and merge for lists.
-* Small data size, where data is typically always accessed when traversing the list.
+- Multiple lists of the same kind.
+- O(1) split and merge for lists.
+- Small data size, where data is typically always accessed when traversing the list.
 
 The PieList is optimized for the foundation of a fibonacci heap, with a priority queue use-case.
 

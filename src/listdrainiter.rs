@@ -23,6 +23,11 @@ impl<T> Iterator for ListDrainIter<'_, T> {
     fn next(&mut self) -> Option<Self::Item> {
         self.0.remove_first()
     }
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.0.len();
+        (len, Some(len))
+    }
 }
 
 impl<T> DoubleEndedIterator for ListDrainIter<'_, T> {
